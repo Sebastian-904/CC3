@@ -11,8 +11,11 @@ interface State {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, State> {
-  // FIX: Use class property for state initialization to resolve type errors with `this.state` and `this.props`.
-  state: State = { hasError: false };
+  // FIX: Use constructor for state initialization to resolve potential type errors.
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError(_: Error): State {
     return { hasError: true };
