@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CalendarEvent, TaskCategory } from '../../lib/types';
 import { useApp } from '../../hooks/useApp';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -14,6 +14,32 @@ interface CalendarSectionProps {
 const CalendarSection: React.FC<CalendarSectionProps> = ({ selectedDate, setSelectedDate, events }) => {
     const { taskCategories } = useApp();
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [animatedDates, setAnimatedDates] = useState<Set<string>>(new Set());
+    const prevEventsRef = useRef<CalendarEvent[]>();
+
+    useEffect(() => {
+        if (prevEventsRef.current) {
+            const prevEvents = prevEventsRef.current;
+            const changedOrAddedEvents = events.filter(currentEvent => {
+                const prevEvent = prevEvents.find(pe => pe.id === currentEvent.id);
+                if (!prevEvent) return true; // New event
+                if (JSON.stringify(prevEvent) !== JSON.stringify(currentEvent)) return true; // Updated event
+                return false;
+            });
+            
+            const newDates = new Set<string>();
+            changedOrAddedEvents.forEach(e => newDates.add(new Date(e.dueDate).toDateString()));
+
+            if (newDates.size > 0) {
+                setAnimatedDates(newDates);
+                const timer = setTimeout(() => setAnimatedDates(new Set()), 1000); // Corresponds to animation duration
+                return () => clearTimeout(timer);
+            }
+        }
+        
+        prevEventsRef.current = events;
+
+    }, [events]);
 
     const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
@@ -80,12 +106,21 @@ const CalendarSection: React.FC<CalendarSectionProps> = ({ selectedDate, setSele
                 {days.map((day, index) => {
                     if (!day) return <div key={`empty-${index}`}></div>;
 
-                    const isToday = day.toDateString() === new Date().toDateString();
-                    const isSelected = day.toDateString() === selectedDate.toDateString();
-                    const dayEvents = eventsByDate.get(day.toDateString()) || [];
+                    const dateStr = day.toDateString();
+                    const isToday = dateStr === new Date().toDateString();
+                    const isSelected = dateStr === selectedDate.toDateString();
+                    const dayEvents = eventsByDate.get(dateStr) || [];
+                    const shouldAnimate = animatedDates.has(dateStr);
 
                     return (
-                        <div key={index} onClick={() => setSelectedDate(day)} className="flex flex-col items-center justify-start h-20 p-1 cursor-pointer rounded-lg hover:bg-accent transition-colors">
+                        <div 
+                            key={index} 
+                            onClick={() => setSelectedDate(day)} 
+                            className={cn(
+                                "flex flex-col items-center justify-start h-20 p-1 cursor-pointer rounded-lg hover:bg-accent transition-colors",
+                                shouldAnimate && "animate-flash-bg"
+                            )}
+                        >
                             <span className={cn(
                                 "flex items-center justify-center w-8 h-8 rounded-full text-sm",
                                 { 'bg-primary text-primary-foreground': isSelected },

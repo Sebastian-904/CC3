@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CalendarEvent } from '../../lib/types';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
@@ -16,6 +16,32 @@ interface DailyEventsListProps {
 
 const DailyEventsList: React.FC<DailyEventsListProps> = ({ events, selectedDate, onSelectEvent, selectedEventId }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [animatedEvents, setAnimatedEvents] = useState<Record<string, 'new' | 'updated'>>({});
+    const prevEventsRef = useRef<CalendarEvent[]>();
+
+    useEffect(() => {
+        if (prevEventsRef.current) {
+            const prevEvents = prevEventsRef.current;
+            const animations: Record<string, 'new' | 'updated'> = {};
+
+            events.forEach(currentEvent => {
+                const prevEvent = prevEvents.find(pe => pe.id === currentEvent.id);
+                if (!prevEvent) {
+                    animations[currentEvent.id] = 'new';
+                } else if (JSON.stringify(prevEvent) !== JSON.stringify(currentEvent)) {
+                    animations[currentEvent.id] = 'updated';
+                }
+            });
+
+            if (Object.keys(animations).length > 0) {
+                setAnimatedEvents(animations);
+                const timer = setTimeout(() => setAnimatedEvents({}), 1500); // Animation duration
+                return () => clearTimeout(timer);
+            }
+        }
+
+        prevEventsRef.current = events;
+    }, [events]);
 
     return (
         <div className="bg-card p-4 rounded-lg border">
@@ -36,7 +62,9 @@ const DailyEventsList: React.FC<DailyEventsListProps> = ({ events, selectedDate,
                             onClick={() => onSelectEvent(event)}
                             className={cn(
                                 "p-3 rounded-lg cursor-pointer border flex justify-between items-center transition-colors",
-                                selectedEventId === event.id ? "bg-accent" : "hover:bg-accent/50"
+                                selectedEventId === event.id ? "bg-accent" : "hover:bg-accent/50",
+                                animatedEvents[event.id] === 'new' && 'animate-fade-in-down',
+                                animatedEvents[event.id] === 'updated' && 'shimmer-bg animate-shimmer'
                             )}
                         >
                             <div>

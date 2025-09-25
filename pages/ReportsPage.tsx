@@ -9,6 +9,7 @@ import ReportPreviewDialog from '../components/reports/ReportPreviewDialog';
 import { getAllUsers } from '../services/firebaseService';
 import { UserProfile, CalendarEvent } from '../lib/types';
 import { useLanguage } from '../hooks/useLanguage';
+import AIProfileImporter from '../components/reports/AIProfileImporter';
 
 const ReportsPage = () => {
     const { user } = useAuth();
@@ -190,6 +191,16 @@ const ReportsPage = () => {
                     <h1 className="text-2xl font-bold flex items-center gap-2"><BarChart2 className="h-6 w-6" /> {t('reportsAndData')}</h1>
                     <p className="text-muted-foreground">{t('manageReports')}</p>
                 </div>
+                
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>AI-Powered Onboarding</CardTitle>
+                        <CardDescription>Upload a company's document to automatically extract and populate their profile.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <AIProfileImporter />
+                    </CardContent>
+                </Card>
 
                 <Card>
                     <CardHeader>
@@ -233,22 +244,15 @@ const ReportsPage = () => {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Import / Export (Excel)</CardTitle>
-                        <CardDescription>Manage bulk data using Excel files for efficiency.</CardDescription>
+                        <CardTitle>Data Templates (CSV)</CardTitle>
+                        <CardDescription>Manage bulk data using CSV files for efficiency.</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid sm:grid-cols-2 gap-4">
-                        <ReportCard
+                    <CardContent>
+                         <ReportCard
                             icon={<FileDown />}
                             title="Descargar Plantilla de Empresas"
                             description="Get the master CSV template to fill in and onboard a new client quickly."
                             onClick={handleDownloadTemplate}
-                        />
-                        <ReportCard
-                            icon={<FileUp />}
-                            title="Importar desde Excel"
-                            description="Upload a completed template to populate a company's profile, obligations, and tasks."
-                            isUpload={true}
-                            onFileChange={(e) => alert(`File "${e.target.files?.[0]?.name}" selected. Ready for processing.`)}
                         />
                     </CardContent>
                 </Card>
@@ -290,28 +294,19 @@ interface ReportCardProps {
     description: string;
     icon?: React.ReactNode;
     onClick?: () => void;
-    isUpload?: boolean;
-    onFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
     isDownloading?: boolean;
 }
 
-const ReportCard: React.FC<ReportCardProps> = ({ title, description, icon, onClick, isUpload = false, onFileChange, isDownloading = false }) => (
+const ReportCard: React.FC<ReportCardProps> = ({ title, description, icon, onClick, isDownloading = false }) => (
     <div className="bg-muted/50 p-4 rounded-lg flex flex-col justify-between">
         <div>
             <h4 className="font-semibold flex items-center gap-2">{icon || <FileText className="h-4 w-4 text-primary" />} {title}</h4>
             <p className="text-sm text-muted-foreground mt-1 mb-4">{description}</p>
         </div>
-        {isUpload ? (
-            <Button as="label" className="w-full cursor-pointer">
-                <FileUp className="mr-2 h-4 w-4" /> Select File to Import
-                <input type="file" className="hidden" accept=".xlsx, .xls, .csv" onChange={onFileChange} />
-            </Button>
-        ) : (
-            <Button onClick={onClick} className="w-full" disabled={isDownloading}>
-                {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (icon ? null : <FileDown className="mr-2 h-4 w-4" />)}
-                {isDownloading ? 'Generating...' : (icon ? 'Download' : 'Generate')}
-            </Button>
-        )}
+        <Button onClick={onClick} className="w-full" disabled={isDownloading}>
+            {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (icon ? null : <FileDown className="mr-2 h-4 w-4" />)}
+            {isDownloading ? 'Generating...' : (icon ? 'Download' : 'Generate')}
+        </Button>
     </div>
 );
 

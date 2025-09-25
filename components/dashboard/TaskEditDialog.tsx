@@ -4,9 +4,12 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
 import { useApp } from '../../hooks/useApp';
-import { CalendarEvent, EventPriority, EventStatus } from '../../lib/types';
-import { Loader2, Sparkles } from 'lucide-react';
+import { CalendarEvent, EventPriority, EventStatus, Reminder, ReminderTime } from '../../lib/types';
+import { Loader2, Sparkles, Bell, X, PlusCircle } from 'lucide-react';
 import { getAIAssistantResponse } from '../../services/geminiService';
+import Select from '../ui/Select';
+import { v4 as uuidv4 } from 'uuid';
+import Badge from '../ui/Badge';
 
 interface TaskEditDialogProps {
   isOpen: boolean;
@@ -20,6 +23,16 @@ interface AISuggestion {
     reasoning: string;
 }
 
+const reminderOptions: { value: ReminderTime; label: string }[] = [
+    { value: '30m', label: '30 minutes before' },
+    { value: '1h', label: '1 hour before' },
+    { value: '1d', label: '1 day before' },
+];
+
+const getReminderLabel = (time: ReminderTime) => {
+    return reminderOptions.find(opt => opt.value === time)?.label || time;
+}
+
 const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event, initialDate }) => {
   const { addEvent, updateEvent, taskCategories, companyUsers } = useApp();
   const [formData, setFormData] = useState({
@@ -30,10 +43,12 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event,
     priority: 'medium' as EventPriority,
     status: 'pending' as EventStatus,
     assigneeId: '',
+    reminders: [] as Reminder[],
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
+  const [newReminder, setNewReminder] = useState<ReminderTime>('1d');
 
   useEffect(() => {
     if (isOpen) {
@@ -46,6 +61,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event,
                 priority: event.priority,
                 status: event.status,
                 assigneeId: event.assigneeId || '',
+                reminders: event.reminders || [],
             });
         } else {
             setFormData({
@@ -56,6 +72,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event,
                 priority: 'medium',
                 status: 'pending',
                 assigneeId: '',
+                reminders: [],
             });
         }
         // Reset suggestion state on open
@@ -96,7 +113,7 @@ Do not add any other text or formatting. Your entire response must be a single, 
     } finally {
         setIsSuggesting(false);
     }
-  }, [formData.title, formData.description, formData.category, companyUsers, taskCategories]);
+  }, [formData.title, formData.description, formData.category, companyUsers, taskCategories, formData.assigneeId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -119,6 +136,22 @@ Do not add any other text or formatting. Your entire response must be a single, 
     if (name === 'assigneeId') {
       setAiSuggestion(null); // Clear suggestion on manual change
     }
+  };
+
+  const handleAddReminder = () => {
+      if (newReminder && !formData.reminders.some(r => r.time === newReminder)) {
+          setFormData(prev => ({
+              ...prev,
+              reminders: [...prev.reminders, { id: uuidv4(), time: newReminder }]
+          }));
+      }
+  };
+
+  const handleRemoveReminder = (id: string) => {
+      setFormData(prev => ({
+          ...prev,
+          reminders: prev.reminders.filter(r => r.id !== id)
+      }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,27 +193,27 @@ Do not add any other text or formatting. Your entire response must be a single, 
                     </div>
                     <div>
                         <label htmlFor="status" className="text-sm font-medium">Status</label>
-                        <select id="status" name="status" value={formData.status} onChange={handleChange} required className="mt-1 block w-full rounded-md border-input bg-background py-2 pl-3 pr-10 text-base focus:border-primary focus:outline-none focus:ring-primary sm:text-sm h-10">
+                        <Select id="status" name="status" value={formData.status} onChange={handleChange} required className="mt-1">
                             <option value="pending">Pending</option>
                             <option value="completed">Completed</option>
                             <option value="overdue">Overdue</option>
-                        </select>
+                        </Select>
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="category" className="text-sm font-medium">Category</label>
-                        <select id="category" name="category" value={formData.category} onChange={handleChange} required className="mt-1 block w-full rounded-md border-input bg-background py-2 pl-3 pr-10 text-base focus:border-primary focus:outline-none focus:ring-primary sm:text-sm h-10">
+                        <Select id="category" name="category" value={formData.category} onChange={handleChange} required className="mt-1">
                             {taskCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                        </select>
+                        </Select>
                     </div>
                     <div>
                         <label htmlFor="priority" className="text-sm font-medium">Priority</label>
-                        <select id="priority" name="priority" value={formData.priority} onChange={handleChange} required className="mt-1 block w-full rounded-md border-input bg-background py-2 pl-3 pr-10 text-base focus:border-primary focus:outline-none focus:ring-primary sm:text-sm h-10">
+                        <Select id="priority" name="priority" value={formData.priority} onChange={handleChange} required className="mt-1">
                             <option value="low">Low</option>
                             <option value="medium">Medium</option>
                             <option value="high">High</option>
-                        </select>
+                        </Select>
                     </div>
                 </div>
                  <div>
@@ -213,10 +246,36 @@ Do not add any other text or formatting. Your entire response must be a single, 
                             </div>
                         </div>
                     )}
-                    <select id="assigneeId" name="assigneeId" value={formData.assigneeId} onChange={handleChange} className="mt-1 block w-full rounded-md border-input bg-background py-2 pl-3 pr-10 text-base focus:border-primary focus:outline-none focus:ring-primary sm:text-sm h-10">
+                    <Select id="assigneeId" name="assigneeId" value={formData.assigneeId} onChange={handleChange} className="mt-1">
                         <option value="">Unassigned</option>
                         {companyUsers.map(user => <option key={user.uid} value={user.uid}>{user.displayName}</option>)}
-                    </select>
+                    </Select>
+                </div>
+                <div>
+                    <label htmlFor="reminders" className="text-sm font-medium">Reminders</label>
+                    <div className="flex items-center gap-2 mt-1">
+                        <Select id="reminders" value={newReminder} onChange={e => setNewReminder(e.target.value as ReminderTime)}>
+                            {reminderOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </Select>
+                        <Button type="button" size="sm" variant="outline" onClick={handleAddReminder}>
+                            <PlusCircle className="h-4 w-4 mr-2"/> Add
+                        </Button>
+                    </div>
+                    {formData.reminders.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {formData.reminders.map(reminder => (
+                                <Badge key={reminder.id} variant="secondary" className="flex items-center gap-1.5 pr-1">
+                                    <Bell className="h-3 w-3" />
+                                    {getReminderLabel(reminder.time)}
+                                    <button type="button" onClick={() => handleRemoveReminder(reminder.id)} className="rounded-full hover:bg-black/10 dark:hover:bg-white/10 p-0.5">
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
                 </div>
                  <div>
                     <label htmlFor="description" className="text-sm font-medium">Description</label>

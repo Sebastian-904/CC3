@@ -19,6 +19,13 @@ export interface UserProfile {
 export type EventStatus = 'pending' | 'completed' | 'overdue';
 export type EventPriority = 'low' | 'medium' | 'high';
 
+export type ReminderTime = '30m' | '1h' | '1d';
+
+export interface Reminder {
+    id: string;
+    time: ReminderTime;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -29,6 +36,7 @@ export interface CalendarEvent {
   status: EventStatus;
   assigneeId?: string;
   companyId: string;
+  reminders: Reminder[];
 }
 
 export interface TaskCategory {
@@ -80,10 +88,11 @@ export interface AITaskSuggestion {
 
 export interface Notification {
   id: string;
-  type: 'TASK_ASSIGNED' | 'TASK_DUE' | 'TASK_OVERDUE' | 'COMMENT_MENTION';
+  type: 'TASK_ASSIGNED' | 'TASK_DUE' | 'TASK_OVERDUE' | 'COMMENT_MENTION' | 'TASK_REMINDER';
   message: string;
   timestamp: string; // ISO string
   isRead: boolean;
+  relatedId?: string; // e.g., event ID
 }
 
 export type ObligationFrequency = 'monthly' | 'quarterly' | 'yearly';
@@ -100,3 +109,56 @@ export interface Obligation {
     assigneeId?: string;
     status: 'active' | 'inactive';
 }
+
+// Types for AI Data Extraction with confidence and source
+interface WithAIExtra<T> {
+    value: T;
+    confidence: number; // 0-1
+    source: string;
+}
+
+export type AIExtractedCompany = {
+    name: WithAIExtra<string>;
+    general: {
+        datosFiscales: {
+            razonSocial: WithAIExtra<string>;
+            rfc: WithAIExtra<string>;
+            telefono: WithAIExtra<string>;
+            domicilioFiscal: WithAIExtra<string>;
+        };
+        actaConstitutiva: {
+            numeroEscritura: WithAIExtra<string>;
+            fecha: WithAIExtra<string>;
+            nombreFedatario: WithAIExtra<string>;
+        };
+        representanteLegal: {
+            numeroEscrituraPoder: WithAIExtra<string>;
+            fechaPoder: WithAIExtra<string>;
+            nombreFedatario: WithAIExtra<string>;
+        };
+    };
+    programas: {
+        immex?: {
+            numeroRegistro: WithAIExtra<string>;
+            modalidad: WithAIExtra<string>;
+            fechaAutorizacion: WithAIExtra<string>;
+        };
+        prosec?: {
+            numeroRegistro: WithAIExtra<string>;
+            sector: WithAIExtra<string>;
+            fechaAutorizacion: WithAIExtra<string>;
+        };
+    };
+    miembros: {
+        nombre: WithAIExtra<string>;
+        rfc: WithAIExtra<string>;
+    }[];
+    domicilios: {
+        direccionCompleta: WithAIExtra<string>;
+        telefono: WithAIExtra<string>;
+    }[];
+    agentesAduanales: {
+        nombre: WithAIExtra<string>;
+        numeroPatente: WithAIExtra<string>;
+    }[];
+};

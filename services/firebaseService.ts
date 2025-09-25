@@ -57,11 +57,11 @@ const MOCK_TASK_CATEGORIES: TaskCategory[] = [
 const getInitialDate = (offsetDays: number) => new Date(new Date().setDate(new Date().getDate() + offsetDays)).toISOString().split('T')[0];
 
 let MOCK_EVENTS: CalendarEvent[] = [
-    { id: uuidv4(), companyId: 'comp-1', title: 'Declaración mensual de IVA', dueDate: getInitialDate(2), description: 'Presentar la declaración de IVA correspondiente al mes anterior.', category: 'cat-1', priority: 'high', status: 'pending', assigneeId: 'user-3' },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Renovación de Certificación OEA', dueDate: getInitialDate(15), description: 'Iniciar el proceso de renovación de la certificación de Operador Económico Autorizado.', category: 'cat-4', priority: 'medium', status: 'pending', assigneeId: 'user-1' },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Auditoría interna de Anexo 24', dueDate: getInitialDate(-5), description: 'Revisar registros y saldos del sistema de control de inventarios.', category: 'cat-2', priority: 'high', status: 'overdue', assigneeId: 'user-2' },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Pago de impuestos de importación', dueDate: getInitialDate(-1), description: 'Realizar el pago correspondiente a la última importación.', category: 'cat-1', priority: 'medium', status: 'completed', assigneeId: 'user-3' },
-    { id: uuidv4(), companyId: 'comp-2', title: 'Presentar DIOT', dueDate: getInitialDate(5), description: 'Declaración Informativa de Operaciones con Terceros.', category: 'cat-1', priority: 'medium', status: 'pending', assigneeId: 'user-4' },
+    { id: uuidv4(), companyId: 'comp-1', title: 'Declaración mensual de IVA', dueDate: getInitialDate(2), description: 'Presentar la declaración de IVA correspondiente al mes anterior.', category: 'cat-1', priority: 'high', status: 'pending', assigneeId: 'user-3', reminders: [] },
+    { id: uuidv4(), companyId: 'comp-1', title: 'Renovación de Certificación OEA', dueDate: getInitialDate(15), description: 'Iniciar el proceso de renovación de la certificación de Operador Económico Autorizado.', category: 'cat-4', priority: 'medium', status: 'pending', assigneeId: 'user-1', reminders: [{id: 'rem-1', time: '1d'}] },
+    { id: uuidv4(), companyId: 'comp-1', title: 'Auditoría interna de Anexo 24', dueDate: getInitialDate(-5), description: 'Revisar registros y saldos del sistema de control de inventarios.', category: 'cat-2', priority: 'high', status: 'overdue', assigneeId: 'user-2', reminders: [] },
+    { id: uuidv4(), companyId: 'comp-1', title: 'Pago de impuestos de importación', dueDate: getInitialDate(-1), description: 'Realizar el pago correspondiente a la última importación.', category: 'cat-1', priority: 'medium', status: 'completed', assigneeId: 'user-3', reminders: [] },
+    { id: uuidv4(), companyId: 'comp-2', title: 'Presentar DIOT', dueDate: getInitialDate(5), description: 'Declaración Informativa de Operaciones con Terceros.', category: 'cat-1', priority: 'medium', status: 'pending', assigneeId: 'user-4', reminders: [] },
 ];
 
 let MOCK_OBLIGATIONS: Obligation[] = [
@@ -70,9 +70,9 @@ let MOCK_OBLIGATIONS: Obligation[] = [
 ];
 
 let MOCK_NOTIFICATIONS: Notification[] = [
-    { id: uuidv4(), type: 'TASK_OVERDUE', message: 'Task "Auditoría interna de Anexo 24" is overdue.', timestamp: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString(), isRead: false },
-    { id: uuidv4(), type: 'TASK_ASSIGNED', message: 'You have been assigned a new task: "Declaración mensual de IVA"', timestamp: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), isRead: false },
-    { id: uuidv4(), type: 'TASK_DUE', message: 'Task "Pago de impuestos de importación" is due today.', timestamp: new Date().toISOString(), isRead: true },
+    { id: uuidv4(), type: 'TASK_OVERDUE', message: 'Task "Auditoría interna de Anexo 24" is overdue.', timestamp: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString(), isRead: false, relatedId: 'some-id' },
+    { id: uuidv4(), type: 'TASK_ASSIGNED', message: 'You have been assigned a new task: "Declaración mensual de IVA"', timestamp: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), isRead: false, relatedId: 'some-id' },
+    { id: uuidv4(), type: 'TASK_DUE', message: 'Task "Pago de impuestos de importación" is due today.', timestamp: new Date().toISOString(), isRead: true, relatedId: 'some-id' },
 ];
 
 // --- MOCK AUTH ---
@@ -219,12 +219,41 @@ export const updateCalendarEvent = (updatedEvent: CalendarEvent): Promise<Calend
     });
 };
 
+export const mockDeleteCalendarEvent = (eventId: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const initialLength = MOCK_EVENTS.length;
+            MOCK_EVENTS = MOCK_EVENTS.filter(e => e.id !== eventId);
+            if (MOCK_EVENTS.length < initialLength) {
+                resolve();
+            } else {
+                reject(new Error("Event not found for deletion"));
+            }
+        }, apiLatency());
+    });
+};
+
+
 export const addObligationData = (companyId: string, obligationData: Omit<Obligation, 'id' | 'companyId' | 'status'>): Promise<Obligation> => {
      return new Promise(resolve => {
         setTimeout(() => {
             const newObligation: Obligation = { ...obligationData, id: uuidv4(), companyId, status: 'active' };
             MOCK_OBLIGATIONS.push(newObligation);
             resolve(JSON.parse(JSON.stringify(newObligation)));
+        }, apiLatency());
+    });
+};
+
+export const mockDeleteObligation = (obligationId: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const initialLength = MOCK_OBLIGATIONS.length;
+            MOCK_OBLIGATIONS = MOCK_OBLIGATIONS.filter(o => o.id !== obligationId);
+            if (MOCK_OBLIGATIONS.length < initialLength) {
+                resolve();
+            } else {
+                reject(new Error("Obligation not found for deletion"));
+            }
         }, apiLatency());
     });
 };

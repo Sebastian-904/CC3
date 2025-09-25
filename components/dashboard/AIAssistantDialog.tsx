@@ -8,6 +8,7 @@ import { useApp } from '../../hooks/useApp';
 import { AITaskSuggestion } from '../../lib/types';
 import { Card, CardContent, CardFooter } from '../ui/Card';
 import { cn } from '../../lib/utils';
+import { useLanguage } from '../../hooks/useLanguage';
 
 
 interface Message {
@@ -18,10 +19,11 @@ interface Message {
 
 const AIAssistantDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
     const { addEvent, taskCategories } = useApp();
+    const { t } = useLanguage();
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
-        { sender: 'ai', text: "Hello! How can I help you manage your compliance tasks today? You can ask me to create new events from text." }
+        { sender: 'ai', text: t('aiAssistantWelcome') }
     ]);
 
     const handleSend = async () => {
@@ -66,7 +68,7 @@ const AIAssistantDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         
         const confirmationMessage: Message = {
             sender: 'ai',
-            text: `Great! I've added "${suggestion.task.title}" to your calendar.`
+            text: t('aiAssistantTaskAdded').replace('{taskTitle}', suggestion.task.title)
         };
         setMessages(prev => [...prev, confirmationMessage]);
     };
@@ -74,8 +76,8 @@ const AIAssistantDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     return (
         <Dialog isOpen={isOpen} onClose={onClose}>
             <DialogHeader>
-                <DialogTitle className="flex items-center gap-2"><Sparkles className="text-yellow-500"/> AI Assistant</DialogTitle>
-                <DialogDescription>Use natural language to manage your compliance calendar.</DialogDescription>
+                <DialogTitle className="flex items-center gap-2"><Sparkles className="text-yellow-500"/> {t('aiAssistant')}</DialogTitle>
+                <DialogDescription>{t('aiAssistantDesc')}</DialogDescription>
                 <DialogClose onClose={onClose} />
             </DialogHeader>
             <DialogContent className="min-h-[400px] flex flex-col">
@@ -98,7 +100,7 @@ const AIAssistantDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                                        <CardFooter className="p-2 border-t">
                                            <Button size="sm" className="w-full" onClick={() => handleAddTask(msg.suggestion!)}>
                                                <CalendarPlus className="mr-2 h-4 w-4"/>
-                                               Add to Calendar
+                                               {t('addToCalendar')}
                                            </Button>
                                        </CardFooter>
                                    </Card>
@@ -122,7 +124,7 @@ const AIAssistantDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                     <Textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="e.g., 'Remind me to file the quarterly report by next Friday...'"
+                        placeholder={t('aiAssistantPlaceholder')}
                         className="flex-1 resize-none"
                         rows={1}
                         onKeyDown={(e) => {

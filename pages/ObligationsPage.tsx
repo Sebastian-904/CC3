@@ -3,10 +3,12 @@ import { useApp } from '../hooks/useApp';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import { PlusCircle, FileText, Loader2 } from 'lucide-react';
+import { PlusCircle, FileText, Loader2, Trash2 } from 'lucide-react';
 import ObligationDialog from '../components/obligations/ObligationDialog';
 import { useLanguage } from '../hooks/useLanguage';
 import type { Obligation } from '../lib/types';
+import ConfirmationDialog from '../components/ui/ConfirmationDialog';
+import { useToast } from '../hooks/useToast';
 
 const getDueDateRuleText = (obligation: Obligation) => {
     try {
@@ -29,9 +31,13 @@ const getDueDateRuleText = (obligation: Obligation) => {
   };
 
 const ObligationsPage = () => {
-    const { obligations, loading, activeCompany } = useApp();
+    const { obligations, loading, activeCompany, deleteObligation } = useApp();
     const { t } = useLanguage();
+    const { toast } = useToast();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [obligationToDelete, setObligationToDelete] = useState<Obligation | null>(null);
 
     if (loading && !activeCompany) {
         return <div className="flex h-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -50,6 +56,34 @@ const ObligationsPage = () => {
             </div>
         );
     }
+
+    const handleDeleteClick = (obligation: Obligation) => {
+        setObligationToDelete(obligation);
+        setIsConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!obligationToDelete) return;
+        setIsDeleting(true);
+        try {
+            await deleteObligation(obligationToDelete.id);
+            toast({
+                title: "Obligation Deleted",
+                description: `The obligation "${obligationToDelete.title}" has been deleted.`,
+            });
+            setIsConfirmOpen(false);
+            setObligationToDelete(null);
+        } catch (error) {
+            console.error("Failed to delete obligation", error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to delete the obligation.",
+            });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -79,6 +113,7 @@ const ObligationsPage = () => {
                                     <th className="hidden sm:table-cell p-3 font-medium text-left">Frequency</th>
                                     <th className="hidden lg:table-cell p-3 font-medium text-left">Due Date / Rule</th>
                                     <th className="p-3 font-medium text-left">Status</th>
+                                    <th className="p-3 font-medium text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -87,13 +122,17 @@ const ObligationsPage = () => {
                                         <td className="p-3 font-semibold">{ob.title}</td>
                                         <td className="hidden md:table-cell p-3">{ob.category}</td>
                                         <td className="hidden sm:table-cell p-3">{ob.frequency}</td>
-                                        {/* FIX: Changed from ob.dueDate to a function that generates the rule text */}
                                         <td className="hidden lg:table-cell p-3">{getDueDateRuleText(ob)}</td>
-                                        <td className="p-3"><Badge variant={ob.status as any}>{ob.status}</Badge></td>
+                                        <td className="p-3"><Badge variant={ob.status === 'active' ? 'completed' : 'secondary'}>{ob.status}</Badge></td>
+                                        <td className="p-3 text-right">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(ob)} title="Delete Obligation">
+                                                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                            </Button>
+                                        </td>
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan={5} className="p-6 text-center text-muted-foreground">No obligations found for this company.</td>
+                                        <td colSpan={6} className="p-6 text-center text-muted-foreground">No obligations found for this company.</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -103,6 +142,17 @@ const ObligationsPage = () => {
             </Card>
 
             <ObligationDialog isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} />
+            
+            {obligationToDelete && (
+                <ConfirmationDialog
+                    isOpen={isConfirmOpen}
+                    onClose={() => setIsConfirmOpen(false)}
+                    onConfirm={handleDeleteConfirm}
+                    title="Delete Obligation"
+                    description={`Are you sure you want to delete the obligation "${obligationToDelete.title}"? This will stop future tasks from being generated from this rule.`}
+                    isConfirming={isDeleting}
+                />
+            )}
         </div>
     );
 };

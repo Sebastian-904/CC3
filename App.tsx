@@ -10,6 +10,7 @@ import UsersPage from './pages/UsersPage';
 import AppLayout from './components/AppLayout';
 import AuthGuard from './components/AuthGuard';
 import ErrorBoundary from './components/ErrorBoundary';
+import ImportReviewPage from './pages/ImportReviewPage';
 
 const ProtectedLayout: React.FC = () => (
     <AuthGuard>
@@ -29,6 +30,7 @@ const App: React.FC = () => {
                     <Route path="/company-profile" element={<CompanyProfilePage />} />
                     <Route path="/obligations" element={<ObligationsPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/import-review" element={<ImportReviewPage />} />
                     <Route path="/users" element={<UsersPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -16,20 +16,18 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-    <React.StrictMode>
-        <HashRouter>
-            <AuthProvider>
-                <ThemeProvider>
-                    <LanguageProvider>
-                        <ToastProvider>
-                            <AppProvider>
-                                <App />
-                                <Toaster />
-                            </AppProvider>
-                        </ToastProvider>
-                    </LanguageProvider>
-                </ThemeProvider>
-            </AuthProvider>
-        </HashRouter>
-    </React.StrictMode>
+    <HashRouter>
+        <AuthProvider>
+            <ThemeProvider>
+                <LanguageProvider>
+                    <ToastProvider>
+                        <AppProvider>
+                            <App />
+                            <Toaster />
+                        </AppProvider>
+                    </ToastProvider>
+                </LanguageProvider>
+            </ThemeProvider>
+        </AuthProvider>
+    </HashRouter>
 );

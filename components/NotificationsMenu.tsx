@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Bell, CalendarClock, MessageSquare, AlertTriangle, UserCheck } from 'lucide-react';
+import { Bell, CalendarClock, MessageSquare, AlertTriangle, UserCheck, BellRing } from 'lucide-react';
 import { useApp } from '../hooks/useApp';
 import Button from './ui/Button';
 import useOnClickOutside from '../hooks/useOnClickOutside';
@@ -41,12 +41,13 @@ const NotificationsMenu = () => {
             case 'TASK_DUE': return <CalendarClock className="h-5 w-5 text-yellow-500" />;
             case 'TASK_OVERDUE': return <AlertTriangle className="h-5 w-5 text-red-500" />;
             case 'COMMENT_MENTION': return <MessageSquare className="h-5 w-5 text-green-500" />;
+            case 'TASK_REMINDER': return <BellRing className="h-5 w-5 text-purple-500" />;
             default: return <Bell className="h-5 w-5 text-gray-500" />;
         }
     };
 
     return (
-        <div className="relative" ref={menuRef}>
+        <div className="relative z-50" ref={menuRef}>
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setIsOpen(!isOpen)}>
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
