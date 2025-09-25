@@ -6,6 +6,7 @@ import useOnClickOutside from '../hooks/useOnClickOutside';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/Card';
 import { cn } from '../lib/utils';
 import { Notification } from '../lib/types';
+import { useLanguage } from '../hooks/useLanguage';
 
 // A simple time-ago function
 const timeAgo = (date: Date): string => {
@@ -26,6 +27,7 @@ const timeAgo = (date: Date): string => {
 
 const NotificationsMenu = () => {
     const { notifications, markNotificationAsRead, markAllNotificationsAsRead } = useApp();
+    const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -59,10 +61,10 @@ const NotificationsMenu = () => {
                 <div className="absolute right-0 mt-2 w-80 max-w-sm">
                     <Card className="shadow-lg animate-in fade-in-0 zoom-in-95">
                         <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
-                            <CardTitle className="text-lg">Notifications</CardTitle>
+                            <CardTitle className="text-lg">{t('notifications')}</CardTitle>
                              {unreadCount > 0 && (
                                 <Button variant="link" className="p-0 h-auto" onClick={() => markAllNotificationsAsRead()}>
-                                    Mark all as read
+                                    {t('markAllAsRead')}
                                 </Button>
                             )}
                         </CardHeader>
@@ -87,12 +89,12 @@ const NotificationsMenu = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-center text-sm text-muted-foreground p-8">You have no new notifications.</p>
+                                <p className="text-center text-sm text-muted-foreground p-8">{t('noNotifications')}</p>
                             )}
                         </CardContent>
                          {notifications.length > 0 && (
                              <CardFooter className="p-2 border-t">
-                                 <Button variant="ghost" className="w-full text-sm">View all notifications</Button>
+                                 <Button variant="ghost" className="w-full text-sm">{t('viewAllNotifications')}</Button>
                              </CardFooter>
                          )}
                     </Card>

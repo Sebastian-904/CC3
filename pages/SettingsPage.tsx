@@ -1,140 +1,131 @@
-import React, { useState } from 'react';
-import { useTheme } from '../hooks/useTheme';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { cn } from '../lib/utils';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Upload, Trash2 } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
+import { useLanguage } from '../hooks/useLanguage';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Switch from '../components/ui/Switch';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '../hooks/useToast';
+import { UserProfile } from '../lib/types';
 
 const SettingsPage = () => {
+    const { user, updateUserProfile, loading: authLoading } = useAuth();
     const { theme, setTheme } = useTheme();
-    const { user } = useAuth();
+    const { language, setLanguage, t } = useLanguage();
+    const { toast } = useToast();
 
-    const getInitials = (name: string = '') => {
-        const parts = name.split(' ');
-        if (parts.length === 0) return '?';
-        const first = parts[0]?.[0] || '';
-        const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : '';
-        return `${first}${last}`.toUpperCase();
-    }
+    const [profile, setProfile] = useState<Partial<UserProfile>>({});
+    const [isSaving, setIsSaving] = useState(false);
 
-    const generateInitialAvatar = (initials: string) => {
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#4A5568"></rect><text x="50" y="55" font-family="Arial, sans-serif" font-size="40" fill="white" text-anchor="middle" dominant-baseline="middle">${initials}</text></svg>`;
-        return `data:image/svg+xml;base64,${btoa(svg)}`;
-    }
+    useEffect(() => {
+        if (user) {
+            setProfile({
+                displayName: user.displayName,
+                email: user.email,
+                emailPreferences: user.emailPreferences,
+            });
+        }
+    }, [user]);
 
-    const professionalAvatars = [
-        generateInitialAvatar(getInitials(user?.displayName)),
-        `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#2D3748"/><path d="M0 0 L50 100 L100 0 Z" fill="#718096"/></svg>')}`,
-        `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#E2E8F0"/><circle cx="50" cy="50" r="30" fill="#A0AEC0"/><circle cx="50" cy="50" r="15" fill="#4A5568"/></svg>')}`,
-        `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#A0AEC0"/><rect x="25" y="25" width="50" height="50" transform="rotate(45 50 50)" fill="#2D3748"/></svg>')}`
-    ];
-    
-    const [selectedAvatar, setSelectedAvatar] = useState(user?.avatarUrl || professionalAvatars[0]);
-    
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setSelectedAvatar(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+    const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setProfile(p => ({ ...p, [e.target.name]: e.target.value }));
+    };
+
+    const handleEmailPrefChange = (pref: keyof UserProfile['emailPreferences'], value: boolean) => {
+        setProfile(p => ({
+            ...p,
+            emailPreferences: { ...p.emailPreferences!, [pref]: value },
+        }));
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            await updateUserProfile(profile);
+            toast({ title: "Success", description: "Your profile has been updated." });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to update profile." });
+        } finally {
+            setIsSaving(false);
         }
     };
 
+    if (authLoading || !user) {
+        return <div className="flex h-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
+    }
+
     return (
-        <div className="max-w-2xl mx-auto space-y-6">
+        <div className="max-w-3xl mx-auto space-y-6">
+            <h1 className="text-2xl font-bold">{t('settings')}</h1>
+            
             <Card>
                 <CardHeader>
-                    <CardTitle>Settings</CardTitle>
-                    <CardDescription>Manage your application settings.</CardDescription>
+                    <CardTitle>{t('myProfile')}</CardTitle>
+                    <CardDescription>{t('updateProfileInfo')}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg">
-                        <div className="space-y-1 mb-4 sm:mb-0">
-                            <h4 className="font-medium">Theme</h4>
-                            <p className="text-sm text-muted-foreground">Select the application's visual theme.</p>
-                        </div>
-                        <div className="flex items-center gap-2 rounded-md bg-secondary p-1">
-                            <Button 
-                                variant={theme === 'light' ? 'default' : 'ghost'} 
-                                size="sm" 
-                                onClick={() => setTheme('light')}
-                                className={cn({'bg-white text-black shadow-sm': theme === 'light'})}
-                            >
-                                Light
-                            </Button>
-                            <Button 
-                                variant={theme === 'dark' ? 'default' : 'ghost'} 
-                                size="sm" 
-                                onClick={() => setTheme('dark')}
-                                className={cn({'dark:bg-primary dark:text-primary-foreground': theme === 'dark'})}
-                            >
-                                Dark
-                            </Button>
-                            <Button 
-                                variant={theme === 'system' ? 'default' : 'ghost'} 
-                                size="sm" 
-                                onClick={() => setTheme('system')}
-                            >
-                                System
-                            </Button>
-                        </div>
+                <CardContent className="space-y-4">
+                     <div className="space-y-1">
+                        <label htmlFor="displayName" className="text-sm font-medium">{t('displayName')}</label>
+                        <Input id="displayName" name="displayName" value={profile.displayName || ''} onChange={handleProfileChange} />
                     </div>
+                    <div className="space-y-1">
+                        <label htmlFor="email" className="text-sm font-medium">{t('emailAddress')}</label>
+                        <Input id="email" name="email" value={profile.email || ''} disabled />
+                    </div>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {t('saveChanges')}
+                    </Button>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Profile Picture</CardTitle>
-                    <CardDescription>Update your avatar and profile image.</CardDescription>
+                    <CardTitle>{t('emailNotifications')}</CardTitle>
+                    <CardDescription>{t('manageEmailNotifications')}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                        <div className="col-span-1 flex flex-col items-center gap-4">
-                            <img 
-                                src={selectedAvatar} 
-                                alt="Current Avatar" 
-                                className="h-32 w-32 rounded-full object-cover border-4 border-primary/10"
-                            />
-                            <div className="flex items-center justify-center gap-2 w-full">
-                                <Button as="label" variant="outline" className="flex-1 cursor-pointer">
-                                    <Upload className="mr-2 h-4 w-4" /> Upload
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                                </Button>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={() => setSelectedAvatar(professionalAvatars[0])}
-                                    aria-label="Remove photo"
-                                >
-                                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                            </div>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <p className="font-medium">{t('taskAssigned')}</p>
+                            <p className="text-sm text-muted-foreground">{t('taskAssignedDesc')}</p>
                         </div>
-                        <div className="col-span-2">
-                             <p className="text-sm font-medium text-muted-foreground mb-3">Or choose a professional avatar</p>
-                             <div className="grid grid-cols-4 gap-4">
-                                {professionalAvatars.map((avatarSrc, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setSelectedAvatar(avatarSrc)}
-                                        className={cn('rounded-full aspect-square overflow-hidden focus:outline-none focus:ring-offset-2 transition-all', {
-                                            'ring-2 ring-primary ring-offset-background': selectedAvatar === avatarSrc,
-                                            'opacity-70 hover:opacity-100': selectedAvatar !== avatarSrc
-                                        })}
-                                    >
-                                        <img src={avatarSrc} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
-                                    </button>
-                                ))}
-                            </div>
+                        <Switch checked={profile.emailPreferences?.taskAssigned || false} onCheckedChange={checked => handleEmailPrefChange('taskAssigned', checked)} />
+                    </div>
+                     <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <p className="font-medium">{t('taskDue')}</p>
+                            <p className="text-sm text-muted-foreground">{t('taskDueDesc')}</p>
                         </div>
+                        <Switch checked={profile.emailPreferences?.taskDue || false} onCheckedChange={checked => handleEmailPrefChange('taskDue', checked)} />
                     </div>
                 </CardContent>
-                 <CardFooter className="border-t pt-6">
-                    <Button>Save Changes</Button>
-                </CardFooter>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('displayPreferences')}</CardTitle>
+                    <CardDescription>{t('customizeAppearance')}</CardDescription>
+                </CardHeader>
+                <CardContent className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="language" className="text-sm font-medium">{t('language')}</label>
+                        <select id="language" value={language} onChange={e => setLanguage(e.target.value as 'en' | 'es')} className="mt-1 block w-full rounded-md border-input bg-background h-10 px-3">
+                            <option value="es">Español</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="theme" className="text-sm font-medium">{t('theme')}</label>
+                        <select id="theme" value={theme} onChange={e => setTheme(e.target.value as 'light' | 'dark' | 'system')} className="mt-1 block w-full rounded-md border-input bg-background h-10 px-3">
+                            <option value="light">{t('light')}</option>
+                            <option value="dark">{t('dark')}</option>
+                            <option value="system">{t('system')}</option>
+                        </select>
+                    </div>
+                </CardContent>
             </Card>
         </div>
     );

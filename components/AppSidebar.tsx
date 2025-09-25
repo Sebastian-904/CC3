@@ -1,83 +1,83 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { GanttChartSquare, LayoutDashboard, Building, FileText, Settings, Sun, Moon, Monitor, ShieldCheck } from 'lucide-react';
-import { useApp } from '../hooks/useApp';
-import { useTheme } from '../hooks/useTheme';
 import { cn } from '../lib/utils';
-import Button from './ui/Button';
+import { GanttChartSquare, LayoutDashboard, Building, FileText, BarChart2, Users, Settings, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
+import { useLanguage } from '../hooks/useLanguage';
 
-const AppSidebar = () => {
-    const { companies, activeCompany, setActiveCompanyId } = useApp();
+interface AppSidebarProps {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+}
+
+const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, setIsOpen }) => {
     const { theme, setTheme } = useTheme();
+    const { language, setLanguage, t } = useLanguage();
 
-    const navLinks = [
-        { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/company-profile', label: 'Company Profile', icon: Building },
-        { href: '/obligations', label: 'Obligations', icon: ShieldCheck },
-        { href: '/reports', label: 'Reports', icon: FileText },
-        { href: '/settings', label: 'Settings', icon: Settings },
+    const navItems = [
+        { to: '/dashboard', icon: LayoutDashboard, label: t('dashboard') },
+        { to: '/company-profile', icon: Building, label: t('companyProfile') },
+        { to: '/obligations', icon: FileText, label: t('obligationsMatrix') },
+        { to: '/reports', icon: BarChart2, label: t('reports') },
+        { to: '/users', icon: Users, label: t('users') },
+        { to: '/settings', icon: Settings, label: t('settings') },
     ];
-    
-    return (
-        <aside className="hidden w-64 flex-col border-r bg-card p-4 sm:flex">
-            <div className="mb-6 flex items-center gap-2">
-                <GanttChartSquare className="h-7 w-7 text-primary" />
-                <span className="text-xl font-bold">CompliancePro</span>
-            </div>
-            
-            <div className="mb-4">
-                <label htmlFor="company-select" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Active Company
-                </label>
-                <select
-                    id="company-select"
-                    value={activeCompany?.id || ''}
-                    onChange={(e) => setActiveCompanyId(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-input bg-background py-2 pl-3 pr-10 text-base focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
-                    disabled={companies.length === 0}
-                >
-                    {companies.map((company) => (
-                        <option key={company.id} value={company.id}>
-                            {company.name}
-                        </option>
-                    ))}
-                </select>
-            </div>
 
-            <nav className="flex flex-1 flex-col gap-1">
-                {navLinks.map((link) => (
+    return (
+        <aside className={cn(
+            "fixed inset-y-0 left-0 z-40 h-screen border-r bg-card text-card-foreground transition-all duration-300",
+            "hidden lg:flex flex-col",
+            isOpen ? 'w-64' : 'w-16'
+        )}>
+            <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+                <a href="#/" className="flex items-center gap-2 font-semibold">
+                    <GanttChartSquare className="h-6 w-6 text-primary" />
+                    {isOpen && <span className="">CompliancePro</span>}
+                </a>
+            </div>
+            <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 text-sm font-medium lg:px-4 py-4 space-y-1">
+                {navItems.map((item) => (
                     <NavLink
-                        key={link.href}
-                        to={link.href}
-                        className={({ isActive }) =>
-                            cn(
-                                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                                isActive
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                            )
-                        }
+                        key={item.to}
+                        to={item.to}
+                        className={({ isActive }) => cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                            { 'bg-accent text-primary': isActive },
+                            !isOpen && 'justify-center'
+                        )}
+                        title={isOpen ? undefined : item.label}
                     >
-                        <link.icon className="h-5 w-5" />
-                        <span>{link.label}</span>
+                        <item.icon className="h-4 w-4" />
+                        {isOpen && <span>{item.label}</span>}
                     </NavLink>
                 ))}
             </nav>
-            
-            <div className="mt-auto">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Theme</p>
-                <div className="grid grid-cols-3 gap-1 rounded-md bg-secondary p-1">
-                    <Button variant={theme === 'light' ? 'default' : 'ghost'} size="sm" onClick={() => setTheme('light')} className={cn('flex-1 justify-center', {'bg-white text-black shadow-sm': theme === 'light'})}>
-                        <Sun className="h-4 w-4" />
-                    </Button>
-                     <Button variant={theme === 'dark' ? 'default' : 'ghost'} size="sm" onClick={() => setTheme('dark')} className={cn('flex-1 justify-center', {'dark:bg-primary dark:text-primary-foreground': theme === 'dark'})}>
-                        <Moon className="h-4 w-4" />
-                    </Button>
-                    <Button variant={theme === 'system' ? 'default' : 'ghost'} size="sm" onClick={() => setTheme('system')} className="flex-1 justify-center">
-                        <Monitor className="h-4 w-4" />
-                    </Button>
+            <div className="mt-auto p-4 border-t">
+                <div className={cn("flex items-center justify-center gap-4", !isOpen && 'flex-col gap-2')}>
+                    <div className="flex">
+                        <button onClick={() => setTheme('light')} className={cn("p-2 rounded-l-md", theme === 'light' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                            <Sun className="h-4 w-4" />
+                        </button>
+                         <button onClick={() => setTheme('dark')} className={cn("p-2 rounded-r-md", theme === 'dark' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                            <Moon className="h-4 w-4" />
+                        </button>
+                    </div>
+                     <div className="flex">
+                         <button onClick={() => setLanguage('es')} className={cn("px-3 py-2 rounded-l-md text-xs", language === 'es' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                            ES
+                        </button>
+                         <button onClick={() => setLanguage('en')} className={cn("px-3 py-2 rounded-r-md text-xs", language === 'en' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                            EN
+                        </button>
+                    </div>
                 </div>
             </div>
+             <button 
+                onClick={() => setIsOpen(!isOpen)} 
+                className="absolute -right-3 top-16 hidden lg:flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground border-2 border-background"
+             >
+                {isOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </button>
         </aside>
     );
 };

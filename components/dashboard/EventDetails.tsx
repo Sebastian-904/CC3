@@ -1,11 +1,13 @@
+
 import React, { useState } from 'react';
 import { CalendarEvent } from '../../lib/types';
 import { useApp } from '../../hooks/useApp';
-import Badge from '../ui/Badge';
 import Button from '../ui/Button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
-import { Calendar, Tag, AlertTriangle, FileText, X, User } from 'lucide-react';
+import Badge from '../ui/Badge';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
+import { Calendar, User, Tag, Edit, Trash, XCircle, Clock, Share2 } from 'lucide-react';
 import TaskEditDialog from './TaskEditDialog';
+import ShareViaEmailDialog from '../ShareViaEmailDialog';
 
 interface EventDetailsProps {
     event: CalendarEvent | null;
@@ -13,77 +15,103 @@ interface EventDetailsProps {
 }
 
 const EventDetails: React.FC<EventDetailsProps> = ({ event, clearSelection }) => {
-    const { taskCategories, companyUsers } = useApp();
+    const { companyUsers, taskCategories } = useApp();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isShareOpen, setIsShareOpen] = useState(false);
 
     if (!event) {
         return (
-            <Card className="h-full flex items-center justify-center min-h-[400px]">
-                <div className="text-center text-muted-foreground p-6">
+            <Card className="h-full flex items-center justify-center">
+                <div className="text-center text-muted-foreground p-8">
                     <Calendar className="mx-auto h-12 w-12" />
-                    <p className="mt-4 font-medium">Select an event</p>
-                    <p className="text-sm">Choose an event from the list to see its details here.</p>
+                    <p className="mt-4 font-medium">Select a Task</p>
+                    <p className="text-sm">Click on a task from the list to see its details here.</p>
                 </div>
             </Card>
         );
     }
-
-    const category = taskCategories.find(c => c.id === event.category);
+    
     const assignee = companyUsers.find(u => u.uid === event.assigneeId);
-
-    const handleEdit = () => {
-        setIsEditDialogOpen(true);
-    };
+    const category = taskCategories.find(c => c.id === event.category);
 
     return (
         <>
-            <Card className="h-full flex flex-col relative min-h-[400px]">
-                <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-7 w-7" onClick={clearSelection}>
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Close details</span>
-                </Button>
-                <CardHeader>
-                    <CardTitle>{event.title}</CardTitle>
-                    <CardDescription>
-                        Due on {new Date(event.dueDate).toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </CardDescription>
+            <Card className="h-full flex flex-col">
+                <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle>{event.title}</CardTitle>
+                        <div className="flex items-center gap-2 mt-2">
+                             <Badge variant={event.status as any}>{event.status}</Badge>
+                             <Badge variant="outline">{event.priority}</Badge>
+                        </div>
+                    </div>
+                    <div className="flex items-center">
+                         <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={() => setIsShareOpen(true)}>
+                            <Share2 className="h-5 w-5" />
+                        </Button>
+                         <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={clearSelection}>
+                            <XCircle className="h-5 w-5" />
+                        </Button>
+                    </div>
                 </CardHeader>
-                <CardContent className="flex-1 space-y-4">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant={event.status as any}>{event.status}</Badge>
-                        <Badge variant="secondary">{event.priority}</Badge>
+                <CardContent className="flex-1 space-y-4 text-sm">
+                    <div className="flex items-start gap-3">
+                        <Clock className="h-4 w-4 mt-1 text-muted-foreground" />
+                        <div>
+                            <p className="font-semibold">Due Date</p>
+                            <p>{new Date(event.dueDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
                     </div>
+                     {assignee && (
+                        <div className="flex items-start gap-3">
+                            <User className="h-4 w-4 mt-1 text-muted-foreground" />
+                            <div>
+                                <p className="font-semibold">Assigned To</p>
+                                <div className="flex items-center gap-2">
+                                     <img src={assignee.avatarUrl} alt={assignee.displayName} className="h-6 w-6 rounded-full" />
+                                    <p>{assignee.displayName}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                     {category && (
+                        <div className="flex items-start gap-3">
+                            <Tag className="h-4 w-4 mt-1 text-muted-foreground" />
+                            <div>
+                                <p className="font-semibold">Category</p>
+                                <p>{category.name}</p>
+                            </div>
+                        </div>
+                    )}
                     
-                    <div className="space-y-4 pt-2">
-                        <DetailRow icon={<Tag />} label="Category" value={category?.name || 'Uncategorized'} />
-                        {assignee && <DetailRow icon={<User />} label="Assigned To" value={assignee.displayName} />}
-                        <DetailRow icon={<AlertTriangle />} label="Priority" value={event.priority.charAt(0).toUpperCase() + event.priority.slice(1)} />
-                        <DetailRow icon={<FileText />} label="Description" value={event.description || 'No description provided.'} />
-                    </div>
-                    
+                    {event.description && (
+                         <div>
+                            <p className="font-semibold mb-1">Description</p>
+                            <p className="text-muted-foreground whitespace-pre-wrap">{event.description}</p>
+                        </div>
+                    )}
                 </CardContent>
-                <CardFooter>
-                    <Button variant="outline" className="w-full" onClick={handleEdit}>Edit Task</Button>
+                <CardFooter className="border-t pt-4 flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setIsEditDialogOpen(true)}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                    </Button>
+                    <Button variant="destructive" className="flex-1">
+                        <Trash className="mr-2 h-4 w-4" /> Delete
+                    </Button>
                 </CardFooter>
             </Card>
-
-            <TaskEditDialog
+             <TaskEditDialog 
                 isOpen={isEditDialogOpen}
                 onClose={() => setIsEditDialogOpen(false)}
                 event={event}
             />
+            <ShareViaEmailDialog
+                isOpen={isShareOpen}
+                onClose={() => setIsShareOpen(false)}
+                documentTitle={`Task: ${event.title}`}
+            />
         </>
     );
 };
-
-const DetailRow: React.FC<{ icon: React.ReactNode, label: string, value: string }> = ({ icon, label, value }) => (
-    <div className="flex items-start gap-3">
-        <div className="text-muted-foreground mt-1">{React.cloneElement(icon as React.ReactElement, { className: "h-4 w-4" })}</div>
-        <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
-            <p className="text-sm">{value}</p>
-        </div>
-    </div>
-);
 
 export default EventDetails;

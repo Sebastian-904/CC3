@@ -1,13 +1,13 @@
-
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { UserProfile } from '../lib/types';
-import { mockSignIn, mockSignOut, onAuthStateChanged, mockGetUserProfile } from '../services/firebaseService';
+import { mockSignIn, mockSignOut, onAuthStateChanged, mockGetUserProfile, mockUpdateUserProfile } from '../services/firebaseService';
 
 interface AuthContextType {
     user: UserProfile | null;
     loading: boolean;
     login: (email: string, pass: string) => Promise<void>;
     logout: () => Promise<void>;
+    updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,7 +53,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
     }, []);
 
-    const value = { user, loading, login, logout };
+    const updateUserProfile = useCallback(async (data: Partial<UserProfile>) => {
+        if (!user) throw new Error("No user to update");
+        const updatedUser = await mockUpdateUserProfile(user.uid, data);
+        setUser(updatedUser);
+    }, [user]);
+
+    const value = { user, loading, login, logout, updateUserProfile };
 
     return (
         <AuthContext.Provider value={value}>

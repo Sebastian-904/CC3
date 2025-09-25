@@ -8,11 +8,12 @@ import { FileText, FileDown, FileUp, Shield, BarChart2, Loader2 } from 'lucide-r
 import ReportPreviewDialog from '../components/reports/ReportPreviewDialog';
 import { getAllUsers } from '../services/firebaseService';
 import { UserProfile, CalendarEvent } from '../lib/types';
-import DashboardKPIs from '../components/dashboard/DashboardKPIs';
+import { useLanguage } from '../hooks/useLanguage';
 
 const ReportsPage = () => {
     const { user } = useAuth();
     const { activeCompany, events, taskCategories, companyUsers } = useApp();
+    const { t } = useLanguage();
     const isAdminOrConsultant = user?.role === 'admin' || user?.role === 'consultor';
     
     const today = new Date();
@@ -31,12 +32,14 @@ const ReportsPage = () => {
             return eventDate.getFullYear() === today.getFullYear() && eventDate.getMonth() === today.getMonth();
         });
 
-        setReportTitle(`Resumen de Actividad Mensual - ${today.toLocaleString('default', { month: 'long', year: 'numeric' })}`);
+        setReportTitle(`${t('reportMonthlySummary')} - ${today.toLocaleString('default', { month: 'long', year: 'numeric' })}`);
         setReportContent(
-            <div className="space-y-6">
-                <DashboardKPIs events={monthEvents} />
-                <h3 className="text-xl font-semibold pt-4 border-t mt-6">Listado Detallado de Tareas</h3>
-                <ReportTable events={monthEvents} />
+            <div className="space-y-8">
+                <ReportKPIs events={monthEvents} />
+                <div>
+                    <h3 className="text-xl font-semibold mb-3">{t('reportDetailedList')}</h3>
+                    <ReportTable events={monthEvents} />
+                </div>
             </div>
         );
     };
@@ -53,15 +56,15 @@ const ReportsPage = () => {
             return acc;
         }, {} as Record<string, CalendarEvent[]>);
 
-        setReportTitle('Reporte de Tareas Pendientes por Categoría');
+        setReportTitle(t('reportPendingByCategory'));
         setReportContent(
             <div className="space-y-8">
-                {Object.entries(grouped).map(([categoryName, categoryEvents]) => (
+                {Object.entries(grouped).length > 0 ? Object.entries(grouped).map(([categoryName, categoryEvents]) => (
                     <div key={categoryName}>
                         <h3 className="text-xl font-semibold mb-3">{categoryName}</h3>
                         <ReportTable events={categoryEvents} />
                     </div>
-                ))}
+                )) : <p className="text-center text-slate-500 py-8">{t('reportNoPendingTasks')}</p>}
             </div>
         );
     };
@@ -77,8 +80,8 @@ const ReportsPage = () => {
             return eventDate >= from && eventDate <= to;
         }).sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
-        setReportTitle(`Vencimientos del ${dateRange.from} al ${dateRange.to}`);
-        setReportContent(<ReportTable events={rangeEvents} />);
+        setReportTitle(`${t('reportDuesByDateRange')} ${dateRange.from} al ${dateRange.to}`);
+        setReportContent(rangeEvents.length > 0 ? <ReportTable events={rangeEvents} /> : <p className="text-center text-slate-500 py-8">{t('reportNoDuesInRange')}</p>);
     };
     
     const downloadCSV = (content: string, filename: string) => {
@@ -95,18 +98,12 @@ const ReportsPage = () => {
     
     const handleDownloadTemplate = () => {
         const headers = [
-            // General
             "razonSocial", "rfc", "actividadEconomica", "telefono", "domicilioFiscal",
             "numeroEscrituraActa", "fechaActa", "nombreFedatarioActa",
             "numeroEscrituraPoder", "fechaPoder", "nombreFedatarioPoder",
-            // Programas
-            "immexNumero", "immexModalidad", "immexFecha",
-            "prosecNumero", "prosecSector", "prosecFecha",
-            // Miembros
+            "immexNumero", "immexModalidad", "immexFecha", "prosecNumero", "prosecSector", "prosecFecha",
             "miembroNombre", "miembroRfc", "miembroTipo", "miembroCaracter", "miembroNacionalidad", "miembroTributaMexico",
-            // Domicilios
             "domicilioDireccion", "domicilioTelefono", "domicilioPrograma",
-            // Agentes
             "agenteNombre", "agentePatente", "agenteEstado"
         ];
         downloadCSV(headers.join(','), 'plantilla_empresa.csv');
@@ -130,26 +127,53 @@ const ReportsPage = () => {
         }
     };
 
+    const ReportKPIs: React.FC<{events: CalendarEvent[]}> = ({ events }) => {
+         const kpis = useMemo(() => {
+            const counts = { total: events.length, completed: 0, pending: 0, overdue: 0 };
+            events.forEach(event => {
+                if (event.status === 'completed') counts.completed++;
+                else if (event.status === 'pending') counts.pending++;
+                else if (event.status === 'overdue') counts.overdue++;
+            });
+            return counts;
+        }, [events]);
+        const kpiItems = [
+            { title: t('reportTotalTasks'), value: kpis.total },
+            { title: t('reportCompleted'), value: kpis.completed },
+            { title: t('reportPending'), value: kpis.pending },
+            { title: t('reportOverdue'), value: kpis.overdue },
+        ];
+        return (
+             <div className="grid grid-cols-4 gap-4 text-center border border-slate-200 rounded-lg p-4">
+                {kpiItems.map(item => (
+                    <div key={item.title} className="border-r border-slate-200 last:border-r-0">
+                        <p className="text-3xl font-bold text-slate-800">{item.value}</p>
+                        <p className="text-sm text-slate-500">{item.title}</p>
+                    </div>
+                ))}
+            </div>
+        )
+    };
 
     const ReportTable: React.FC<{events: CalendarEvent[]}> = ({ events }) => (
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border border-slate-200 rounded-lg overflow-hidden">
             <table className="w-full text-sm text-left">
-                <thead className="bg-gray-100 dark:bg-gray-800">
+                <thead className="bg-slate-100">
                     <tr>
-                        <th className="p-3 font-semibold text-gray-600 dark:text-gray-300">Fecha</th>
-                        <th className="p-3 font-semibold text-gray-600 dark:text-gray-300">Título</th>
-                        <th className="p-3 font-semibold text-gray-600 dark:text-gray-300">Responsable</th>
-                        <th className="p-3 font-semibold text-gray-600 dark:text-gray-300">Estado</th>
+                        <th className="p-3 font-semibold text-xs uppercase tracking-wider text-slate-500">{t('reportDueDate')}</th>
+                        <th className="p-3 font-semibold text-xs uppercase tracking-wider text-slate-500">{t('reportTitle')}</th>
+                        <th className="p-3 font-semibold text-xs uppercase tracking-wider text-slate-500">{t('reportAssignedTo')}</th>
+                        <th className="p-3 font-semibold text-xs uppercase tracking-wider text-slate-500">{t('reportStatus')}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {events.map(event => {
                         const assignee = companyUsers.find(u => u.uid === event.assigneeId);
                         return (
-                            <tr key={event.id} className="border-b dark:border-gray-700 last:border-b-0">
+                            <tr key={event.id} className="border-b border-slate-200 last:border-b-0 even:bg-slate-50">
                                 <td className="p-3">{event.dueDate}</td>
-                                <td className="p-3 font-medium">{event.title}</td>
-                                <td className="p-3 text-gray-500 dark:text-gray-400">{assignee?.displayName || 'N/A'}</td>
+                                <td className="p-3 font-medium text-slate-700">{event.title}</td>
+                                <td className="p-3 text-slate-500">{assignee?.displayName || 'N/A'}</td>
                                 <td className="p-3 capitalize">{event.status}</td>
                             </tr>
                         );
@@ -163,8 +187,8 @@ const ReportsPage = () => {
         <>
             <div className="space-y-6 max-w-6xl mx-auto">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-bold flex items-center gap-2"><BarChart2 className="h-6 w-6" /> Reports & Data Management</h1>
-                    <p className="text-muted-foreground">Generate reports, manage bulk data, and perform administrative tasks.</p>
+                    <h1 className="text-2xl font-bold flex items-center gap-2"><BarChart2 className="h-6 w-6" /> {t('reportsAndData')}</h1>
+                    <p className="text-muted-foreground">{t('manageReports')}</p>
                 </div>
 
                 <Card>
@@ -174,18 +198,18 @@ const ReportsPage = () => {
                     </CardHeader>
                     <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <ReportCard
-                            title="Resumen de Actividad Mensual"
+                            title={t('reportMonthlySummary')}
                             description="A complete overview of the current month's performance and task status."
                             onClick={generateMonthlySummary}
                         />
                         <ReportCard
-                            title="Pendientes por Categoría"
+                            title={t('reportPendingByCategory')}
                             description="Identifies bottlenecks by grouping all pending tasks by category."
                             onClick={generatePendingByCategory}
                         />
                         <div className="bg-muted/50 p-4 rounded-lg flex flex-col justify-between">
                             <div>
-                                <h4 className="font-semibold">Vencimientos por Rango de Fechas</h4>
+                                <h4 className="font-semibold">{t('reportDuesByDateRange')}</h4>
                                 <p className="text-sm text-muted-foreground mt-1 mb-3">A flexible report to plan for a specific period.</p>
                             </div>
                             <div className="space-y-2">
