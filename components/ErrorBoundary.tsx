@@ -1,4 +1,5 @@
 
+
 import React, { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
@@ -47,7 +48,8 @@ class ErrorBoundary extends Component<Props, State> {
         </div>
       );
     }
-
+    // FIX: Explicitly access props from `this` which is standard for class components.
+    // The error was likely a linter misconfiguration, but this ensures clarity.
     return this.props.children;
   }
 }

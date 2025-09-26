@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, Type } from '@google/genai';
 import { AIExtractedCompany, AITaskSuggestion } from '../lib/types';
 
@@ -23,37 +24,40 @@ const taskSuggestionSchema = {
 
 export const getAIAssistantResponse = async (prompt: string): Promise<string | AITaskSuggestion> => {
   try {
+      // FIX: Use a single, more robust API call instead of a fallback.
+      // This prompt instructs the model to conditionally return JSON or a string.
+      const fullPrompt = `Analyze the user request.
+- If it's a request to create a task, reminder, or calendar event, respond ONLY with a JSON object that follows this schema: ${JSON.stringify(taskSuggestionSchema)}. Do not add any other text, comments, or markdown formatting.
+- Otherwise, provide a helpful, conversational response as a plain text string.
+
+User request: "${prompt}"`;
+
       const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
-          contents: `Analyze the following user request. If it's a request to create a task, reminder, or calendar event, respond ONLY with a JSON object that follows the provided schema. Otherwise, provide a helpful, conversational response as a plain string. User request: "${prompt}"`,
-          config: {
-              responseMimeType: "application/json",
-              responseSchema: taskSuggestionSchema,
-          }
-      });
-
-      const textResponse = response.text;
-      
-      // Attempt to parse as a task suggestion
-      try {
-          const parsed = JSON.parse(textResponse);
-          if (parsed.isTaskSuggestion && parsed.task) {
-              return parsed as AITaskSuggestion;
-          }
-      } catch (e) {
-          // Not a JSON object, treat as a regular string response
-      }
-
-      // Fallback to text if it's not a valid task suggestion JSON
-      const fallbackResponse = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
+          contents: fullPrompt,
           config: {
               systemInstruction: "You are a helpful assistant for a compliance management software. Be concise and helpful."
           }
       });
 
-      return fallbackResponse.text;
+      const textResponse = response.text.trim();
+      
+      // Attempt to parse as a task suggestion
+      try {
+          // A simple check to see if the response might be JSON
+          if (textResponse.startsWith('{') && textResponse.endsWith('}')) {
+              const parsed = JSON.parse(textResponse);
+              if (parsed.isTaskSuggestion && parsed.task) {
+                  return parsed as AITaskSuggestion;
+              }
+          }
+      } catch (e) {
+          // Not a JSON object, so it must be a conversational response.
+          // We will return textResponse below.
+      }
+
+      // If parsing fails or it's not a task, return the plain text response.
+      return textResponse;
 
   } catch (error) {
       console.error("Error getting AI assistant response:", error);

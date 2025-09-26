@@ -1,54 +1,45 @@
-
-import { 
-    UserProfile, Company, CalendarEvent, Obligation, Notification, TaskCategory, ComplianceDocument
-} from '../lib/types';
+// services/firebaseService.ts
+import { Company, UserProfile, UserRole, CalendarEvent, Obligation, Notification, TaskCategory, ComplianceDocument } from '../lib/types';
 
 const MOCK_USERS: UserProfile[] = [
-    { 
-        uid: 'user-admin-01', 
-        email: 'admin@compliance.pro', 
-        displayName: 'Admin User', 
-        role: 'admin',
-        companyId: 'comp-01',
-        emailPreferences: { taskAssigned: true, taskDue: true }
-    },
-    { 
-        uid: 'user-consultor-01', 
-        email: 'consultant@compliance.pro', 
-        displayName: 'Consultant User', 
-        role: 'consultor',
-        companyId: 'comp-01',
-        emailPreferences: { taskAssigned: true, taskDue: false }
-    },
-    { 
-        uid: 'user-cliente-01', 
-        email: 'client@compliance.pro', 
-        displayName: 'Client User', 
-        role: 'cliente',
-        companyId: 'comp-01',
-        emailPreferences: { taskAssigned: false, taskDue: true }
-    },
+    { uid: 'user-1', email: 'admin@compliance.pro', displayName: 'Admin User', role: 'admin', companyId: 'comp-1', emailPreferences: { taskAssigned: true, taskDue: true } },
+    { uid: 'user-2', email: 'consultor@compliance.pro', displayName: 'Consultor User', role: 'consultor', companyId: 'comp-1', emailPreferences: { taskAssigned: true, taskDue: false } },
+    { uid: 'user-3', email: 'cliente@compliance.pro', displayName: 'Cliente User', role: 'cliente', companyId: 'comp-1', emailPreferences: { taskAssigned: false, taskDue: true } },
 ];
 
 const MOCK_COMPANY: Company = {
-    id: 'comp-01',
-    name: 'Innovatech Manufactura S.A. de C.V.',
+    id: 'comp-1',
+    name: 'TechSolutions S.A. de C.V.',
     general: {
         datosFiscales: {
-            razonSocial: 'Innovatech Manufactura S.A. de C.V.',
-            rfc: 'IMA123456XYZ',
-            domicilioFiscal: 'Parque Industrial Querétaro, Av. de la Luz #123, Querétaro, Qro. C.P. 76220',
-            telefono: '442-123-4567'
+            razonSocial: 'TechSolutions S.A. de C.V.',
+            rfc: 'TSO123456XYZ',
+            domicilioFiscal: 'Av. Innovación 123, Parque Tecnológico, Querétaro, QRO 76000',
+            telefono: '442-123-4567',
+        },
+        actaConstitutiva: {
+            numeroEscritura: '54321',
+            fecha: '2010-05-20',
+            notarioPublico: 'Lic. Juan Pérez',
+        },
+        representanteLegal: {
+            nombre: 'Ana García',
+            poderNotarial: '12345',
         }
     },
     programas: {
-        immex: { numeroRegistro: 'IM-123-2020', modalidad: 'Industrial', fechaAutorizacion: '2020-01-15' },
-        prosec: { numeroRegistro: 'PS-456-2021', sector: 'Electrónico', fechaAutorizacion: '2021-03-20' },
+        immex: { numeroRegistro: 'IM-9876-2010', tipo: 'Industrial' },
+        prosec: { numeroRegistro: 'PS-5432-2011', sector: 'Electrónico' },
     },
-    miembros: [{id: 'mem-1', nombre: 'Juan Pérez', rfc: 'PEPJ800101ABC'}],
-    domicilios: [{id: 'dom-1', tipo: 'Planta', direccionCompleta: 'Av. de la Luz #123', telefono: '442-123-4568'}],
-    agentesAduanales: [{id: 'ag-1', nombre: 'Agencia Aduanal del Bajío', numeroPatente: '3001', estadoEncargo: 'Activo'}],
-    documents: [],
+    domicilios: [
+        { id: 'dom-1', direccionCompleta: 'Blvd. Bernardo Quintana 100, Querétaro', telefono: '442-987-6543' }
+    ],
+    miembros: [
+        { id: 'mem-1', nombre: 'Carlos López', rfc: 'LOLC850101ABC' }
+    ],
+    agentesAduanales: [
+        { id: 'aa-1', nombre: 'Agencia Aduanal del Bajío', numeroPatente: '3333', estadoEncargo: 'Activo' }
+    ]
 };
 
 const MOCK_TASK_CATEGORIES: TaskCategory[] = [
@@ -58,52 +49,45 @@ const MOCK_TASK_CATEGORIES: TaskCategory[] = [
     { id: 'cat-4', name: 'Comercio Exterior' },
 ];
 
-const MOCK_EVENTS: CalendarEvent[] = [
-    { id: 'evt-1', companyId: 'comp-01', title: 'Presentar declaración mensual de IVA', description: 'Corresponde al mes de Mayo', dueDate: new Date(new Date().setDate(17)).toISOString().split('T')[0], status: 'pending', priority: 'high', category: 'cat-1', reminders: [] },
-    { id: 'evt-2', companyId: 'comp-01', title: 'Pago de impuestos sobre la nómina', description: '', dueDate: new Date(new Date().setDate(15)).toISOString().split('T')[0], status: 'completed', priority: 'high', category: 'cat-1', reminders: [] },
-    { id: 'evt-3', companyId: 'comp-01', title: 'Revisión de pedimentos de importación', description: 'Revisar pedimentos de la semana pasada.', dueDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString().split('T')[0], status: 'pending', priority: 'medium', category: 'cat-2', reminders: []},
-    { id: 'evt-4', companyId: 'comp-01', title: 'Auditoría interna de Anexo 24', description: '', dueDate: '2024-04-10', status: 'overdue', priority: 'high', category: 'cat-4', reminders: [] },
+const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
+    { id: 'evt-1', companyId: 'comp-1', title: 'Declaración mensual de IVA', description: 'Preparar y presentar la declaración de IVA correspondiente al mes anterior.', dueDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString().split('T')[0], status: 'pending', priority: 'high', category: 'cat-1', reminders: [] },
+    { id: 'evt-2', companyId: 'comp-1', title: 'Revisión de pedimentos de importación', description: 'Auditar una muestra de pedimentos del último mes.', dueDate: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0], status: 'pending', priority: 'medium', category: 'cat-2', reminders: [] },
+    { id: 'evt-3', companyId: 'comp-1', title: 'Pago de impuestos sobre la nómina', description: 'Calcular y pagar el ISN.', dueDate: new Date(new Date().setDate(new Date().getDate() - 10)).toISOString().split('T')[0], status: 'overdue', priority: 'high', category: 'cat-1', reminders: [] },
+    { id: 'evt-4', companyId: 'comp-1', title: 'Reporte de Anexo 24', description: 'Generar reporte mensual de Anexo 24.', dueDate: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString().split('T')[0], status: 'completed', priority: 'medium', category: 'cat-4', reminders: [] },
 ];
 
 const MOCK_OBLIGATIONS: Obligation[] = [
-    { id: 'ob-1', companyId: 'comp-01', title: 'Reporte Anual de Operaciones de Comercio Exterior', description: 'Presentar ante la SE el reporte anual.', category: 'cat-4', frequency: 'yearly', status: 'active' },
-    { id: 'ob-2', companyId: 'comp-01', title: 'Declaración Mensual de Operaciones con Terceros (DIOT)', description: 'Presentar ante el SAT.', category: 'cat-1', frequency: 'monthly', status: 'active' },
+    { id: 'ob-1', companyId: 'comp-1', title: 'Declaración Anual', description: 'Presentar la declaración anual de impuestos.', category: 'cat-1', frequency: 'yearly', status: 'active' },
+    { id: 'ob-2', companyId: 'comp-1', title: 'Reporte IMMEX', description: 'Presentar el reporte anual de operaciones de comercio exterior.', category: 'cat-4', frequency: 'yearly', status: 'active' },
+    { id: 'ob-3', companyId: 'comp-1', title: 'DIOT', description: 'Declaración Informativa de Operaciones con Terceros.', category: 'cat-1', frequency: 'monthly', status: 'active' },
 ];
 
 const MOCK_NOTIFICATIONS: Notification[] = [
-    { id: 'notif-1', userId: 'user-cliente-01', type: 'TASK_DUE', message: 'La tarea "Presentar declaración mensual de IVA" vence pronto.', timestamp: new Date(Date.now() - 3600000).toISOString(), isRead: false },
-    { id: 'notif-2', userId: 'user-cliente-01', type: 'TASK_OVERDUE', message: 'La tarea "Auditoría interna de Anexo 24" está vencida.', timestamp: new Date(Date.now() - 86400000 * 2).toISOString(), isRead: false },
-    { id: 'notif-3', userId: 'user-cliente-01', type: 'TASK_ASSIGNED', message: 'Se te asignó la tarea "Revisión de pedimentos".', timestamp: new Date(Date.now() - 86400000 * 3).toISOString(), isRead: true },
+    { id: 'notif-1', userId: 'user-1', type: 'TASK_OVERDUE', message: 'La tarea "Pago de impuestos sobre la nómina" está vencida.', isRead: false, timestamp: new Date(Date.now() - 3600000).toISOString() },
+    { id: 'notif-2', userId: 'user-1', type: 'TASK_DUE', message: 'La tarea "Declaración mensual de IVA" vence en 5 días.', isRead: false, timestamp: new Date(Date.now() - 7200000).toISOString() },
+    { id: 'notif-3', userId: 'user-1', type: 'TASK_ASSIGNED', message: 'Se te ha asignado la tarea "Revisión de NOM-051".', isRead: true, timestamp: new Date(Date.now() - 86400000).toISOString() },
 ];
 
 const MOCK_COMPLIANCE_DOCS: ComplianceDocument[] = [
-    { id: 'cdoc-1', title: 'Ley Aduanera', description: 'Ley que regula la entrada y salida de mercancías del territorio nacional.', category: 'Ley', publicationDate: '2023-12-15', fileName: 'ley_aduanera.pdf', fileUrl: '#', fileType: 'application/pdf', fileSize: 1024 * 512, uploadDate: new Date().toISOString(), aiSummary: '• Establece las regulaciones para el despacho aduanero.\n• Define los regímenes aduaneros aplicables.\n• Fija las infracciones y sanciones en materia aduanera.'},
-    { id: 'cdoc-2', title: 'Reglas Generales de Comercio Exterior 2024', description: 'Disposiciones de carácter general en materia de comercio exterior para el año 2024.', category: 'RGCE', publicationDate: '2024-01-01', fileName: 'rgce_2024.pdf', fileUrl: '#', fileType: 'application/pdf', fileSize: 1024 * 1024 * 2, uploadDate: new Date().toISOString(), aiSummary: '• Actualiza los procedimientos para la importación y exportación.\n• Modifica los requisitos para certificaciones como IVA/IEPS y OEA.\n• Introduce nuevos criterios para la clasificación arancelaria.'},
+    { id: 'cdoc-1', title: 'Ley Aduanera 2024', description: 'Texto vigente de la Ley Aduanera.', category: 'Ley', publicationDate: '2024-01-01', uploadDate: new Date().toISOString(), fileName: 'ley_aduanera.pdf', fileUrl: '#', fileType: 'application/pdf', fileSize: 1024 * 500, aiSummary: 'Este documento detalla las regulaciones para la entrada y salida de mercancías del territorio nacional, incluyendo las obligaciones de los importadores, exportadores y agentes aduanales.' },
+    { id: 'cdoc-2', title: 'RGCE 2024 - Anexo 22', description: 'Instructivo de llenado del pedimento.', category: 'RGCE', publicationDate: '2024-03-15', uploadDate: new Date().toISOString(), fileName: 'anexo_22.pdf', fileUrl: '#', fileType: 'application/pdf', fileSize: 1024 * 200, aiSummary: 'El Anexo 22 establece las claves y formatos que deben utilizarse para el correcto llenado de los pedimentos aduanales, siendo fundamental para la correcta declaración de mercancías.' }
 ];
 
-
-// --- EXPORTED FUNCTIONS ---
-
-// Used for the login page simulation
 export const getMockLoginUsers = (): UserProfile[] => {
     return MOCK_USERS;
-};
+}
 
-// Used by AppContext to load all data for the logged-in user's company
-export const getMockDataForUser = async (uid: string) => {
-    const user = MOCK_USERS.find(u => u.uid === uid);
-    if (!user) throw new Error("User not found in mock data");
-    
-    // Simulate API delay
-    await new Promise(res => setTimeout(res, 500));
-
+export const getMockDataForUser = async (userId: string) => {
+    // In a real app, this would fetch data from Firebase based on the user's companyId.
+    // Here we return the same mock data for everyone.
+    await new Promise(res => setTimeout(res, 500)); // Simulate network latency
     return {
         company: MOCK_COMPANY,
-        companyUsers: MOCK_USERS.filter(u => u.companyId === user.companyId),
-        events: MOCK_EVENTS,
+        companyUsers: MOCK_USERS,
+        events: MOCK_CALENDAR_EVENTS,
         obligations: MOCK_OBLIGATIONS,
         notifications: MOCK_NOTIFICATIONS,
         taskCategories: MOCK_TASK_CATEGORIES,
-        complianceDocuments: MOCK_COMPLIANCE_DOCS,
+        complianceDocuments: MOCK_COMPLIANCE_DOCS
     };
 };
