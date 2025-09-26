@@ -1,7 +1,7 @@
+
 import { GoogleGenAI, Type } from '@google/genai';
 import { AIExtractedCompany, AITaskSuggestion } from '../lib/types';
 
-// FIX: Per coding guidelines, initialize GoogleGenAI with a named apiKey parameter.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const taskSuggestionSchema = {
@@ -32,7 +32,6 @@ export const getAIAssistantResponse = async (prompt: string): Promise<string | A
           }
       });
 
-      // FIX: Per coding guidelines, directly access the .text property for the response.
       const textResponse = response.text;
       
       // Attempt to parse as a task suggestion
@@ -54,7 +53,6 @@ export const getAIAssistantResponse = async (prompt: string): Promise<string | A
           }
       });
 
-      // FIX: Per coding guidelines, directly access the .text property for the response.
       return fallbackResponse.text;
 
   } catch (error) {
@@ -132,7 +130,6 @@ export const extractCompanyDataFromDocument = async (document: { base64: string,
             }
         });
 
-        // FIX: Per coding guidelines, directly access the .text property for the response.
         const jsonStr = response.text.trim();
         return JSON.parse(jsonStr) as AIExtractedCompany;
     } catch (error) {
@@ -154,11 +151,10 @@ export const getComplianceNews = async (companyProfile: { sector?: string, progr
             },
         });
 
-        // FIX: Per coding guidelines, directly access the .text property for the response.
         const summary = response.text;
         // FIX: Per coding guidelines, access grounding chunks for sources.
         const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        const sources = groundingChunks ? groundingChunks.map(chunk => chunk.web).filter(s => s?.uri && s?.title) as { uri: string, title: string }[] : [];
+        const sources = groundingChunks?.map(chunk => chunk.web).filter(s => s?.uri && s?.title) as { uri: string, title: string }[] ?? [];
 
         return { summary, sources };
     } catch (error) {
@@ -184,7 +180,6 @@ export const summarizeLegalDocument = async (document: { base64: string, mimeTyp
           contents: { parts: [docPart, textPart] },
       });
 
-      // FIX: Per coding guidelines, directly access the .text property for the response.
       return response.text;
   } catch (error) {
       console.error("Error summarizing document:", error);

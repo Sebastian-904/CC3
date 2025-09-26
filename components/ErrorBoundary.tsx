@@ -1,6 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
-import Button from './ui/Button';
+
+import React, { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -12,11 +11,8 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  // FIX: Initialize state using a class property. This ensures `this.state` is available throughout the component lifecycle
-  // and resolves errors related to accessing properties on an uninitialized state.
   public state: State = {
     hasError: false,
-    error: undefined,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -24,38 +20,30 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    console.error("Uncaught error:", error, errorInfo);
   }
 
-  public handleRefresh = () => {
-    window.location.reload();
-  };
-
-  render() {
+  public render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-screen items-center justify-center bg-secondary/50 p-4">
-            <Card className="w-full max-w-lg text-center">
-                <CardHeader>
-                    <CardTitle>¡Ups! Algo salió mal.</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground mb-4">
-                        Ocurrió un error inesperado. Por favor, intenta refrescar la página.
-                    </p>
-                    {this.state.error && (
-                        <details className="text-left bg-muted p-2 rounded-md text-xs">
-                            <summary>Detalles del Error</summary>
-                            <pre className="mt-2 whitespace-pre-wrap">
-                                {this.state.error.stack}
-                            </pre>
-                        </details>
-                    )}
-                    <Button onClick={this.handleRefresh} className="mt-6">
-                        Refrescar Página
-                    </Button>
-                </CardContent>
-            </Card>
+        <div className="flex h-screen w-screen flex-col items-center justify-center bg-background text-foreground">
+            <div className="max-w-md text-center">
+                <h1 className="text-2xl font-bold text-destructive">Oops! Something went wrong.</h1>
+                <p className="mt-2 text-muted-foreground">
+                    We encountered an unexpected error. Please try refreshing the page.
+                </p>
+                {this.state.error && (
+                    <pre className="mt-4 whitespace-pre-wrap rounded-md bg-muted p-4 text-left text-xs">
+                        {this.state.error.toString()}
+                    </pre>
+                )}
+                <button 
+                    onClick={() => window.location.reload()}
+                    className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                    Refresh Page
+                </button>
+            </div>
         </div>
       );
     }

@@ -1,18 +1,62 @@
+
 export type UserRole = 'admin' | 'consultor' | 'cliente';
 
-export interface UserProfile {
-    uid: string;
-    email: string;
-    displayName: string;
-    role: UserRole;
-    companyId: string;
-    emailPreferences: {
-        taskAssigned: boolean;
-        taskDue: boolean;
-    };
+export interface EmailPreferences {
+  taskAssigned: boolean;
+  taskDue: boolean;
 }
 
-export interface CompanyFile {
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  companyId: string;
+  emailPreferences: EmailPreferences;
+}
+
+export interface GeneralData {
+  datosFiscales: {
+    razonSocial: string;
+    rfc: string;
+    domicilioFiscal: string;
+    telefono: string;
+  };
+}
+
+export interface ProgramDetail {
+  numeroRegistro: string;
+  modalidad?: string;
+  sector?: string;
+  fechaAutorizacion: string;
+}
+
+export interface Programs {
+  immex?: ProgramDetail;
+  prosec?: ProgramDetail;
+}
+
+export interface Member {
+  id: string;
+  nombre: string;
+  rfc: string;
+}
+
+export interface Address {
+  id: string;
+  tipo: string;
+  direccionCompleta: string;
+  telefono: string;
+}
+
+export interface CustomsAgent {
+  id: string;
+  nombre: string;
+  numeroPatente: string;
+  estadoEncargo: 'Activo' | 'Inactivo';
+}
+
+export interface Document {
     id: string;
     name: string;
     url: string;
@@ -23,81 +67,55 @@ export interface CompanyFile {
 }
 
 export interface Company {
-    id: string;
-    name: string;
-    general: {
-        datosFiscales: {
-            razonSocial: string;
-            rfc: string;
-            domicilioFiscal: string;
-            telefono: string;
-        };
-        actaConstitutiva: {
-            numeroEscritura: string;
-            fecha: string;
-            notarioPublico: string;
-        };
-        representanteLegal: {
-            nombre: string;
-            rfc: string;
-        };
-    };
-    programas: {
-        immex?: {
-            numeroRegistro: string;
-            modalidad: string;
-            fechaAutorizacion: string;
-        };
-        prosec?: {
-            numeroRegistro: string;
-            sector: string;
-            fechaAutorizacion: string;
-        };
-    };
-    miembros: { id: string; nombre: string; rfc: string }[];
-    domicilios: { id:string; direccionCompleta: string; telefono: string }[];
-    agentesAduanales: { id: string; nombre: string; numeroPatente: string; estadoEncargo: string }[];
-    documents?: CompanyFile[];
+  id: string;
+  name: string;
+  general: GeneralData;
+  programas: Programs;
+  miembros: Member[];
+  domicilios: Address[];
+  agentesAduanales: CustomsAgent[];
+  documents: Document[];
 }
 
 export type EventStatus = 'pending' | 'completed' | 'overdue';
 export type EventPriority = 'low' | 'medium' | 'high';
 
 export interface CalendarEvent {
-    id: string;
-    companyId: string;
-    title: string;
-    description: string;
-    dueDate: string; // YYYY-MM-DD
-    status: EventStatus;
-    priority: EventPriority;
-    category: string; // references TaskCategory id
-    reminders: any[];
+  id: string;
+  companyId: string;
+  title: string;
+  description: string;
+  dueDate: string; // YYYY-MM-DD
+  status: EventStatus;
+  priority: EventPriority;
+  category: string; // Corresponds to TaskCategory id
+  reminders: string[];
 }
 
 export interface TaskCategory {
     id: string;
     name: string;
-    companyId: string;
 }
 
 export type ObligationFrequency = 'monthly' | 'quarterly' | 'yearly';
+export type ObligationStatus = 'active' | 'inactive';
 
 export interface Obligation {
     id: string;
     companyId: string;
     title: string;
     description: string;
-    category: string;
+    category: string; // Corresponds to TaskCategory id
     frequency: ObligationFrequency;
-    status: 'active' | 'inactive';
+    status: ObligationStatus;
 }
 
 export interface Notification {
     id: string;
-    type: 'TASK_OVERDUE' | 'TASK_DUE' | 'TASK_ASSIGNED' | 'COMMENT_MENTION' | 'TASK_REMINDER';
+    userId: string;
+    type: 'TASK_ASSIGNED' | 'TASK_DUE' | 'TASK_OVERDUE' | 'COMMENT_MENTION' | 'TASK_REMINDER';
     message: string;
-    timestamp: string;
+    timestamp: string; // ISO string
     isRead: boolean;
 }
 
@@ -106,36 +124,35 @@ export interface ComplianceDocument {
     title: string;
     description: string;
     category: 'Ley' | 'Reglamento' | 'Decreto' | 'Acuerdo' | 'RGCE' | 'Criterio' | 'Otro';
-    publicationDate: string;
+    publicationDate: string; // YYYY-MM-DD
     fileName: string;
     fileUrl: string;
     fileType: string;
     fileSize: number;
-    uploadDate: string;
+    uploadDate: string; // ISO string
     aiSummary?: string;
 }
 
-// AI-related types
 export interface AITaskSuggestion {
     isTaskSuggestion: true;
     task: {
         title: string;
         description: string;
-        dueDate: string;
+        dueDate: string; // YYYY-MM-DD
     };
 }
 
-interface ExtractedField {
+export interface AIExtractedField {
     value: string;
     confidence: number;
 }
 
 export interface AIExtractedCompany {
-    name: ExtractedField;
+    name: AIExtractedField;
     general: {
         datosFiscales: {
-            razonSocial: ExtractedField;
-            rfc: ExtractedField;
-        };
+            razonSocial: AIExtractedField;
+            rfc: AIExtractedField;
+        }
     };
 }

@@ -1,11 +1,12 @@
+
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { getMockUserByEmail } from '../services/firebaseService';
 import { UserProfile } from '../lib/types';
+import { getMockLoginUsers } from '../services/firebaseService';
 
 interface AuthContextType {
     user: UserProfile | null;
     loading: boolean;
-    login: (email: string, password?: string) => Promise<void>;
+    login: (email: string, pass: string) => Promise<void>;
     logout: () => void;
     updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
@@ -18,54 +19,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         // Simulate checking for an existing session
-        setLoading(true);
-        try {
-            const storedUserEmail = localStorage.getItem('authUserEmail');
-            if (storedUserEmail) {
-                const loggedInUser = getMockUserByEmail(storedUserEmail);
-                setUser(loggedInUser || null);
-            }
-        } catch (e) {
-            console.error("Failed to load user from storage", e);
-            setUser(null);
-        } finally {
-            setLoading(false);
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
         }
+        setLoading(false);
     }, []);
 
-    const login = useCallback(async (email: string, password?: string) => {
-        setLoading(true);
-        // Simulate API call
-        await new Promise(res => setTimeout(res, 500));
-        const foundUser = getMockUserByEmail(email);
+    const login = useCallback(async (email: string, pass: string) => {
+        // In a real app, you'd validate credentials. Here we just find a mock user.
+        await new Promise(res => setTimeout(res, 1000));
+        const mockUsers = getMockLoginUsers();
+        const foundUser = mockUsers.find(u => u.email === email);
         if (foundUser) {
             setUser(foundUser);
-            localStorage.setItem('authUserEmail', email);
-            setLoading(false);
+            localStorage.setItem('user', JSON.stringify(foundUser));
         } else {
-            setLoading(false);
             throw new Error('User not found');
         }
     }, []);
 
     const logout = useCallback(() => {
         setUser(null);
-        localStorage.removeItem('authUserEmail');
+        localStorage.removeItem('user');
     }, []);
-
-    const updateUserProfile = useCallback(async (profile: Partial<UserProfile>) => {
-        if (!user) throw new Error("Not authenticated");
-        // Simulate API call
+    
+    const updateUserProfile = useCallback(async (profileUpdate: Partial<UserProfile>) => {
+        if (!user) return;
+        
         await new Promise(res => setTimeout(res, 500));
-        setUser(prevUser => {
-            if (!prevUser) return null;
-            const updatedUser = { ...prevUser, ...profile };
-            // In a real app, you would update the source data. Here we just update state.
-            return updatedUser;
-        });
+        const updatedUser = { ...user, ...profileUpdate };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
     }, [user]);
 
-    const value = { user, loading, login, logout, updateUserProfile };
-
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={{ user, loading, login, logout, updateUserProfile }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };

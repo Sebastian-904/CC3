@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp';
@@ -96,11 +97,11 @@ const ImportReviewPage: React.FC = () => {
                     <CardTitle>General Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {/* FIX: Use Object.keys for type-safe iteration over the fields. */}
+                    {/* FIX: Use a type assertion for Object.keys to ensure type safety. */}
                     {(Object.keys(editableData.general.datosFiscales) as Array<keyof typeof editableData.general.datosFiscales>).map((key) => {
                         const data = editableData.general.datosFiscales[key];
                         if (!data) return null;
-                        // FIX: Explicitly convert key to a string to prevent errors with .replace() and template literals.
+                        
                         const keyAsString = String(key);
                         return (
                             <div key={keyAsString} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
