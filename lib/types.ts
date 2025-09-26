@@ -1,121 +1,93 @@
-
-// ---
-// title: lib/types.ts
-// ---
 export type UserRole = 'admin' | 'consultor' | 'cliente';
 
 export interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
-  avatarUrl: string;
   role: UserRole;
   companyId: string;
-  companyName?: string;
   emailPreferences: {
     taskAssigned: boolean;
     taskDue: boolean;
-    commentMention: boolean;
-    dailySummary: boolean;
   };
 }
 
 export type EventStatus = 'pending' | 'completed' | 'overdue';
 export type EventPriority = 'low' | 'medium' | 'high';
 
-export type ReminderTime = '30m' | '1h' | '1d';
-
-export interface Reminder {
+export interface TaskCategory {
     id: string;
-    time: ReminderTime;
-}
-
-export interface Attachment {
-  id: string;
-  name: string;
-  url: string; // In a real app, this would be a download URL
-  type: string; // e.g., 'application/pdf'
+    name: string;
+    companyId: string;
 }
 
 export interface CalendarEvent {
   id: string;
-  title: string;
-  dueDate: string; // YYYY-MM-DD
-  description: string;
-  category: string; // category id
-  priority: EventPriority;
-  status: EventStatus;
-  assigneeId?: string;
   companyId: string;
-  reminders: Reminder[];
-  attachments?: Attachment[];
-}
-
-export interface TaskCategory {
-  id: string;
-  name: string;
-  color: string;
-}
-
-export interface Document {
-  id: string;
-  name: string;
-  url: string;
-  type: string;
-  size: number; // in bytes
-  uploadDate: string; // ISO string
-  category: string; // e.g., 'Fiscal', 'Legal'
+  title: string;
+  description: string;
+  dueDate: string; // YYYY-MM-DD
+  status: EventStatus;
+  priority: EventPriority;
+  category: string; // category id
+  reminders: string[];
 }
 
 export interface Company {
   id: string;
   name: string;
   general: {
-    datosFiscales: {
-      razonSocial: string;
-      rfc: string;
-      telefono: string;
-      domicilioFiscal: string;
-    };
-    actaConstitutiva: {
-      numeroEscritura: string;
-      fecha: string;
-      nombreFedatario: string;
-    };
-    representanteLegal: {
-      numeroEscrituraPoder: string;
-      fechaPoder: string;
-      nombreFedatario: string;
-    };
+      datosFiscales: {
+          razonSocial: string;
+          rfc: string;
+          domicilioFiscal: string;
+          telefono: string;
+      };
+      actaConstitutiva: {
+          numeroEscritura: string;
+          fecha: string;
+          notarioPublico: string;
+      };
+      representanteLegal: {
+          nombre: string;
+          rfc: string;
+      };
   };
   programas: {
-    immex?: { numeroRegistro: string; modalidad: string; fechaAutorizacion: string; };
-    prosec?: { numeroRegistro: string; sector: string; fechaAutorizacion: string; };
-    certificacionIVAYIEPS?: { folio: string; rubro: string; resolucion: string; proximaRenovacion: string; };
-    padronImportadores?: { folio: string; fechaRegistro: string; sector: string; };
+      immex?: {
+          numeroRegistro: string;
+          modalidad: string;
+          fechaAutorizacion: string;
+      };
+      prosec?: {
+          numeroRegistro: string;
+          sector: string;
+          fechaAutorizacion: string;
+      };
   };
-  miembros: { id: string; nombre: string; rfc: string; tipoPersona: 'Física' | 'Moral'; caracter: string; nacionalidad: string; tributaEnMexico: boolean; }[];
-  domicilios: { id: string; direccionCompleta: string; telefono: string; programaVinculado: string; }[];
-  agentesAduanales: { id: string; nombre: string; numeroPatente: string; estadoEncargo: 'Activo' | 'Pendiente' | 'Revocado' }[];
-  documents?: Document[];
+  miembros: { id: string; nombre: string; rfc: string }[];
+  domicilios: { id: string; direccionCompleta: string; telefono: string }[];
+  agentesAduanales: { id: string; nombre: string; numeroPatente: string; estadoEncargo: 'Activo' | 'Inactivo' }[];
+  documents: CompanyDocument[];
+}
+
+export interface CompanyDocument {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  uploadDate: string;
+  category: string;
 }
 
 export interface AITaskSuggestion {
-  isTaskSuggestion: true;
-  task: {
-    title: string;
-    dueDate: string; // YYYY-MM-DD
-    description: string;
-  };
-}
-
-export interface Notification {
-  id: string;
-  type: 'TASK_ASSIGNED' | 'TASK_DUE' | 'TASK_OVERDUE' | 'COMMENT_MENTION' | 'TASK_REMINDER';
-  message: string;
-  timestamp: string; // ISO string
-  isRead: boolean;
-  relatedId?: string; // e.g., event ID
+    isTaskSuggestion: true;
+    task: {
+        title: string;
+        description: string;
+        dueDate: string; // YYYY-MM-DD
+    };
 }
 
 export type ObligationFrequency = 'monthly' | 'quarterly' | 'yearly';
@@ -125,63 +97,44 @@ export interface Obligation {
     companyId: string;
     title: string;
     description: string;
-    category: string; // category id
+    category: string;
     frequency: ObligationFrequency;
-    dayOfMonth?: string; // '1'-'31' or 'last'
-    month?: string; // '1'-'12' for yearly
-    assigneeId?: string;
     status: 'active' | 'inactive';
 }
 
-// Types for AI Data Extraction with confidence and source
-interface WithAIExtra<T> {
-    value: T;
-    confidence: number; // 0-1
-    source: string;
+export interface Notification {
+  id: string;
+  type: 'TASK_ASSIGNED' | 'TASK_DUE' | 'TASK_OVERDUE' | 'COMMENT_MENTION' | 'TASK_REMINDER';
+  message: string;
+  timestamp: string;
+  isRead: boolean;
 }
 
-export type AIExtractedCompany = {
-    name: WithAIExtra<string>;
-    general: {
-        datosFiscales: {
-            razonSocial: WithAIExtra<string>;
-            rfc: WithAIExtra<string>;
-            telefono: WithAIExtra<string>;
-            domicilioFiscal: WithAIExtra<string>;
-        };
-        actaConstitutiva: {
-            numeroEscritura: WithAIExtra<string>;
-            fecha: WithAIExtra<string>;
-            nombreFedatario: WithAIExtra<string>;
-        };
-        representanteLegal: {
-            numeroEscrituraPoder: WithAIExtra<string>;
-            fechaPoder: WithAIExtra<string>;
-            nombreFedatario: WithAIExtra<string>;
-        };
-    };
-    programas: {
-        immex?: {
-            numeroRegistro: WithAIExtra<string>;
-            modalidad: WithAIExtra<string>;
-            fechaAutorizacion: WithAIExtra<string>;
-        };
-        prosec?: {
-            numeroRegistro: WithAIExtra<string>;
-            sector: WithAIExtra<string>;
-            fechaAutorizacion: WithAIExtra<string>;
-        };
-    };
-    miembros: {
-        nombre: WithAIExtra<string>;
-        rfc: WithAIExtra<string>;
-    }[];
-    domicilios: {
-        direccionCompleta: WithAIExtra<string>;
-        telefono: WithAIExtra<string>;
-    }[];
-    agentesAduanales: {
-        nombre: WithAIExtra<string>;
-        numeroPatente: WithAIExtra<string>;
-    }[];
-};
+export interface ComplianceDocument {
+  id: string;
+  title: string;
+  description: string;
+  category: 'Ley' | 'Reglamento' | 'Decreto' | 'Acuerdo' | 'RGCE' | 'Criterio' | 'Otro';
+  publicationDate: string; // YYYY-MM-DD
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  uploadDate: string;
+  aiSummary?: string;
+}
+
+interface ExtractedField<T> {
+  value: T;
+  confidence: number;
+}
+
+export interface AIExtractedCompany {
+  name: ExtractedField<string>;
+  general: {
+      datosFiscales: {
+          razonSocial: ExtractedField<string>;
+          rfc: ExtractedField<string>;
+      }
+  };
+}

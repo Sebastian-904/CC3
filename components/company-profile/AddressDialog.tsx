@@ -1,82 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '../ui/Dialog';
 import Button from '../ui/Button';
-import Input from '../ui/Input';
-import { Textarea } from '../ui/Textarea';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { Company } from '../../lib/types';
-
-type Address = Company['domicilios'][0];
+import { Trash2 } from 'lucide-react';
 
 interface AddressDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  addresses: Address[];
-  onSave: (addresses: Address[]) => void;
-  isSaving: boolean;
+  company: Company;
 }
 
-const AddressDialog: React.FC<AddressDialogProps> = ({ isOpen, onClose, addresses, onSave, isSaving }) => {
-    const [localAddresses, setLocalAddresses] = useState<Address[]>([]);
-
-    useEffect(() => {
-        if(isOpen) {
-            setLocalAddresses(JSON.parse(JSON.stringify(addresses)));
-        }
-    }, [addresses, isOpen]);
-    
-    const handleChange = (index: number, field: keyof Address, value: string) => {
-        const updated = [...localAddresses];
-        (updated[index] as any)[field] = value;
-        setLocalAddresses(updated);
-    };
-
-    const handleAdd = () => {
-        setLocalAddresses([...localAddresses, { id: `new-${Date.now()}`, direccionCompleta: '', telefono: '', programaVinculado: '' }]);
-    };
-
-    const handleRemove = (index: number) => {
-        setLocalAddresses(localAddresses.filter((_, i) => i !== index));
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave(localAddresses);
-    };
-
+const AddressDialog: React.FC<AddressDialogProps> = ({ isOpen, onClose, company }) => {
   return (
     <Dialog isOpen={isOpen} onClose={onClose}>
         <DialogHeader>
-            <DialogTitle>Gestionar Domicilios</DialogTitle>
-            <DialogDescription>Añadir, editar o eliminar domicilios de operación.</DialogDescription>
+            <DialogTitle>Manage Registered Addresses</DialogTitle>
+            <DialogDescription>Add, edit, or remove facility addresses for {company.name}.</DialogDescription>
             <DialogClose onClose={onClose} />
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-            <DialogContent className="space-y-4 max-h-[70vh] overflow-y-auto">
-                {localAddresses.map((address, index) => (
-                    <div key={address.id} className="p-4 border rounded-lg space-y-3 relative">
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => handleRemove(index)}>
+        <DialogContent>
+            <div className="space-y-2">
+                {company.domicilios.map(address => (
+                    <div key={address.id} className="flex justify-between items-center p-2 border rounded-md">
+                        <div>
+                            <p className="font-medium">{address.direccionCompleta}</p>
+                            <p className="text-sm text-muted-foreground">{address.telefono}</p>
+                        </div>
+                        <Button variant="ghost" size="icon">
                             <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
-                        <Textarea placeholder="Dirección Completa" value={address.direccionCompleta} onChange={e => handleChange(index, 'direccionCompleta', e.target.value)} required />
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input placeholder="Teléfono" value={address.telefono} onChange={e => handleChange(index, 'telefono', e.target.value)} />
-                            <Input placeholder="Programa Vinculado" value={address.programaVinculado} onChange={e => handleChange(index, 'programaVinculado', e.target.value)} />
-                        </div>
                     </div>
                 ))}
-                <Button type="button" variant="outline" className="w-full" onClick={handleAdd}>
-                    <PlusCircle className="h-4 w-4 mr-2" /> Añadir Domicilio
-                </Button>
-            </DialogContent>
-            <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancelar</Button>
-                <Button type="submit" disabled={isSaving}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Guardar Cambios
-                </Button>
-            </DialogFooter>
-        </form>
+            </div>
+            <Button className="mt-4 w-full">Add New Address</Button>
+        </DialogContent>
+        <DialogFooter>
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={onClose}>Save Changes</Button>
+        </DialogFooter>
     </Dialog>
   );
 };

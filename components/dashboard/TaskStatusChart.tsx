@@ -1,67 +1,59 @@
 import React, { useMemo } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../ui/Card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/Card';
 import { CalendarEvent } from '../../lib/types';
-import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { PieChart } from 'lucide-react';
 
 interface TaskStatusChartProps {
     events: CalendarEvent[];
 }
 
+// This is a placeholder for a real chart component (e.g., from Recharts, Chart.js)
 const TaskStatusChart: React.FC<TaskStatusChartProps> = ({ events }) => {
+    const data = useMemo(() => {
+        const statuses = { pending: 0, completed: 0, overdue: 0 };
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-    const statusCounts = useMemo(() => {
-        const counts = { completed: 0, pending: 0, overdue: 0, total: 0 };
         events.forEach(event => {
-            if(event.status === 'completed') counts.completed++;
-            else if(event.status === 'pending') counts.pending++;
-            else if(event.status === 'overdue') counts.overdue++;
+            if (event.status === 'completed') {
+                statuses.completed++;
+            } else {
+                const dueDate = new Date(event.dueDate);
+                if (dueDate < today) {
+                    statuses.overdue++;
+                } else {
+                    statuses.pending++;
+                }
+            }
         });
-        counts.total = counts.completed + counts.pending + counts.overdue;
-        return counts;
+        const total = events.length || 1;
+        return [
+            { name: 'Completed', value: statuses.completed, color: 'bg-completed', percent: (statuses.completed / total * 100).toFixed(0) },
+            { name: 'Pending', value: statuses.pending, color: 'bg-pending', percent: (statuses.pending / total * 100).toFixed(0) },
+            { name: 'Overdue', value: statuses.overdue, color: 'bg-overdue', percent: (statuses.overdue / total * 100).toFixed(0) },
+        ];
     }, [events]);
 
-    const chartData = [
-        { status: 'Completed', count: statusCounts.completed, color: 'bg-completed', icon: <CheckCircle className="h-4 w-4 text-completed" /> },
-        { status: 'Pending', count: statusCounts.pending, color: 'bg-pending', icon: <Clock className="h-4 w-4 text-pending" /> },
-        { status: 'Overdue', count: statusCounts.overdue, color: 'bg-overdue', icon: <AlertCircle className="h-4 w-4 text-overdue" /> },
-    ];
-    
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Task Status Overview</CardTitle>
-                <CardDescription>A summary of all tasks by their current status.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><PieChart className="h-5 w-5" /> Task Status</CardTitle>
+                <CardDescription>A summary of all task statuses.</CardDescription>
             </CardHeader>
             <CardContent>
-                {statusCounts.total > 0 ? (
-                    <div className="space-y-4">
-                        <div className="flex w-full h-8 rounded-full overflow-hidden bg-muted">
-                            {chartData.map(item => {
-                                const percentage = (item.count / statusCounts.total) * 100;
-                                if (percentage === 0) return null;
-                                return (
-                                    <div
-                                        key={item.status}
-                                        className={item.color}
-                                        style={{ width: `${percentage}%` }}
-                                        title={`${item.status}: ${item.count} (${percentage.toFixed(1)}%)`}
-                                    />
-                                );
-                            })}
+                <div className="w-full h-4 rounded-full flex overflow-hidden bg-muted">
+                    {data.map(item => (
+                        <div key={item.name} className={item.color} style={{ width: `${item.percent}%` }} title={`${item.name}: ${item.value}`}></div>
+                    ))}
+                </div>
+                <div className="mt-4 flex justify-around text-sm">
+                     {data.map(item => (
+                        <div key={item.name} className="flex items-center gap-2">
+                            <div className={`h-3 w-3 rounded-full ${item.color}`}></div>
+                            <span>{item.name} ({item.value})</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                            {chartData.map(item => (
-                                <div key={item.status} className="flex items-center gap-2">
-                                    <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                                    <span className="text-muted-foreground">{item.status}</span>
-                                    <span className="font-semibold">{item.count}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ) : (
-                    <p className="text-center text-muted-foreground py-4">No task data to display.</p>
-                )}
+                     ))}
+                </div>
             </CardContent>
         </Card>
     );

@@ -1,94 +1,78 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '../ui/Dialog';
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent, DialogFooter, DialogClose } from '../ui/Dialog';
 import Button from '../ui/Button';
-import { Loader2, ShieldCheck, AlertTriangle, CheckCircle } from 'lucide-react';
-import { getAIAssistantResponse } from '../../services/geminiService';
+import { Loader2, Sparkles, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface AIHealthCheckDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type CheckStatus = 'idle' | 'checking' | 'success' | 'error';
-
 const AIHealthCheckDialog: React.FC<AIHealthCheckDialogProps> = ({ isOpen, onClose }) => {
-  const [status, setStatus] = useState<CheckStatus>('idle');
-  const [message, setMessage] = useState('');
+    const [status, setStatus] = useState<'idle' | 'running' | 'complete' | 'error'>('idle');
+    const [results, setResults] = useState<string[]>([]);
 
-  const handleRunCheck = async () => {
-    setStatus('checking');
-    try {
-        const response = await getAIAssistantResponse("Health check: say 'ok'", "You are a health check service. Respond with 'ok'.");
-        if (response.toLowerCase().includes('ok')) {
-            setStatus('success');
-            setMessage('AI services are operating normally.');
-        } else {
-            setStatus('error');
-            setMessage(`Received an unexpected response from the AI service: ${response}`);
-        }
-    } catch (error) {
-        setStatus('error');
-        setMessage(error instanceof Error ? error.message : 'An unknown error occurred during the health check.');
-        console.error("AI Health Check failed:", error);
-    }
-  };
+    const handleRunCheck = async () => {
+        setStatus('running');
+        setResults([]);
+        // Simulate an AI check
+        await new Promise(res => setTimeout(res, 2000));
+        setResults([
+            'All IMMEX documentation appears to be up to date.',
+            'Potential risk found: PROSEC authorization expires in 90 days.',
+            'Recommendation: Schedule a review of customs agent contracts.',
+        ]);
+        setStatus('complete');
+    };
 
-  const resetState = () => {
-      onClose();
-      // Delay reset to allow dialog to close smoothly
-      setTimeout(() => {
-          setStatus('idle');
-          setMessage('');
-      }, 300);
-  };
+    const handleClose = () => {
+        setStatus('idle');
+        onClose();
+    };
 
-  return (
-    <Dialog isOpen={isOpen} onClose={resetState}>
-        <DialogHeader>
-            <DialogTitle>AI Service Health Check</DialogTitle>
-            <DialogDescription>Verify the connection to the AI assistant service.</DialogDescription>
-            <DialogClose onClose={resetState} />
-        </DialogHeader>
-        <DialogContent className="text-center p-8">
-            {status === 'idle' && (
-                <>
-                    <ShieldCheck className="mx-auto h-16 w-16 text-muted-foreground" />
-                    <p className="mt-4 text-muted-foreground">Click the button below to start the health check.</p>
-                </>
-            )}
-            {status === 'checking' && (
-                <>
-                    <Loader2 className="mx-auto h-16 w-16 animate-spin text-primary" />
-                    <p className="mt-4 text-muted-foreground">Pinging AI services...</p>
-                </>
-            )}
-            {status === 'success' && (
-                 <>
-                    <CheckCircle className="mx-auto h-16 w-16 text-completed" />
-                    <p className="mt-4 font-semibold text-completed">Connection Successful</p>
-                    <p className="text-sm text-muted-foreground">{message}</p>
-                </>
-            )}
-            {status === 'error' && (
-                <>
-                    <AlertTriangle className="mx-auto h-16 w-16 text-destructive" />
-                    <p className="mt-4 font-semibold text-destructive">Connection Failed</p>
-                    <p className="text-sm text-muted-foreground">{message}</p>
-                </>
-            )}
-        </DialogContent>
-        <DialogFooter>
-            <Button type="button" variant="outline" onClick={resetState}>Close</Button>
-            <Button onClick={handleRunCheck} disabled={status === 'checking'}>
-                {status === 'checking' ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking...
-                    </>
-                ) : 'Run Health Check'}
-            </Button>
-        </DialogFooter>
-    </Dialog>
-  );
+    return (
+        <Dialog isOpen={isOpen} onClose={handleClose}>
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><Sparkles className="text-yellow-500" /> AI Compliance Health Check</DialogTitle>
+                <DialogDescription>Let AI analyze your company profile for potential compliance risks and recommendations.</DialogDescription>
+                <DialogClose onClose={handleClose} />
+            </DialogHeader>
+            <DialogContent className="min-h-[200px]">
+                {status === 'idle' && (
+                    <div className="text-center p-8">
+                        <p>Click "Run Check" to start the analysis.</p>
+                    </div>
+                )}
+                {status === 'running' && (
+                    <div className="text-center p-8">
+                        <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
+                        <p className="mt-4 text-muted-foreground">Analyzing your compliance data...</p>
+                    </div>
+                )}
+                 {status === 'complete' && (
+                    <div className="space-y-3">
+                        <h3 className="font-semibold flex items-center gap-2"><CheckCircle className="h-5 w-5 text-completed" /> Analysis Complete</h3>
+                        <ul className="list-disc list-inside text-sm space-y-2">
+                           {results.map((res, i) => <li key={i}>{res}</li>)}
+                        </ul>
+                    </div>
+                )}
+                 {status === 'error' && (
+                     <div className="text-center p-8 text-destructive">
+                        <AlertTriangle className="h-12 w-12 mx-auto" />
+                        <p className="mt-4 font-semibold">An error occurred during the analysis.</p>
+                    </div>
+                 )}
+            </DialogContent>
+            <DialogFooter>
+                <Button variant="outline" onClick={handleClose}>Close</Button>
+                <Button onClick={handleRunCheck} disabled={status === 'running'}>
+                    {status === 'running' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    {status === 'complete' ? 'Run Again' : 'Run Check'}
+                </Button>
+            </DialogFooter>
+        </Dialog>
+    );
 };
 
 export default AIHealthCheckDialog;

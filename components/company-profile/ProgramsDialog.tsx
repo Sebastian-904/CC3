@@ -1,94 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '../ui/Dialog';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import { Loader2 } from 'lucide-react';
 import { Company } from '../../lib/types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/Tabs';
-import set from 'lodash.set';
-
-type ProgramsData = Company['programas'];
+import { useApp } from '../../hooks/useApp';
+import { useToast } from '../../hooks/useToast';
+import { Loader2 } from 'lucide-react';
 
 interface ProgramsDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  data: ProgramsData;
-  onSave: (data: ProgramsData) => void;
-  isSaving: boolean;
+  company: Company;
 }
 
-const ProgramsDialog: React.FC<ProgramsDialogProps> = ({ isOpen, onClose, data, onSave, isSaving }) => {
-  const [formData, setFormData] = useState<ProgramsData>(data);
-  
-  useEffect(() => {
-    if (isOpen) {
-      // Ensure nested objects exist to prevent errors on controlled inputs
-      const safeData = {
-          immex: data.immex || { numeroRegistro: '', modalidad: '', fechaAutorizacion: '' },
-          prosec: data.prosec || { numeroRegistro: '', sector: '', fechaAutorizacion: '' },
-          certificacionIVAYIEPS: data.certificacionIVAYIEPS || { folio: '', rubro: '', resolucion: '', proximaRenovacion: ''},
-          padronImportadores: data.padronImportadores || { folio: '', fechaRegistro: '', sector: ''}
-      };
-      setFormData(JSON.parse(JSON.stringify(safeData)));
+const ProgramsDialog: React.FC<ProgramsDialogProps> = ({ isOpen, onClose, company }) => {
+    const { updateCompany } = useApp();
+    const { toast } = useToast();
+    const [formData, setFormData] = useState(company.programas);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        const [program, field] = name.split('.');
+         setFormData(prev => ({
+            ...prev,
+            [program]: {
+                ...(prev as any)[program],
+                [field]: value,
+            }
+        }));
+    };
+    
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            await updateCompany({ ...company, programas: formData });
+            toast({ title: "Success", description: "Programs have been updated." });
+            onClose();
+        } catch {
+             toast({ variant: 'destructive', title: "Error", description: "Failed to update programs." });
+        } finally {
+            setIsSaving(false);
+        }
     }
-  }, [data, isOpen]);
-
-  const handleChange = (path: string, value: string) => {
-    const updatedData = { ...formData };
-    set(updatedData, path, value);
-    setFormData(updatedData);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-  };
 
   return (
     <Dialog isOpen={isOpen} onClose={onClose}>
         <DialogHeader>
-            <DialogTitle>Gestionar Programas y Certificaciones</DialogTitle>
-            <DialogDescription>Edita la información de los programas de fomento de la empresa.</DialogDescription>
+            <DialogTitle>Edit Programs</DialogTitle>
+            <DialogDescription>Update IMMEX, PROSEC, and other program details for {company.name}.</DialogDescription>
             <DialogClose onClose={onClose} />
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-            <DialogContent className="max-h-[70vh] overflow-y-auto">
-                 <Tabs defaultValue="immex" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="immex">IMMEX</TabsTrigger>
-                        <TabsTrigger value="prosec">PROSEC</TabsTrigger>
-                        <TabsTrigger value="iva">IVA/IEPS</TabsTrigger>
-                        <TabsTrigger value="padron">Padrón</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="immex" className="space-y-4 pt-4">
-                        <Field label="No. de Registro" path="immex.numeroRegistro" value={formData.immex?.numeroRegistro} onChange={handleChange} />
-                        <Field label="Modalidad" path="immex.modalidad" value={formData.immex?.modalidad} onChange={handleChange} />
-                        <Field label="Fecha de Autorización" path="immex.fechaAutorizacion" value={formData.immex?.fechaAutorizacion} onChange={handleChange} type="date" />
-                    </TabsContent>
-                    <TabsContent value="prosec" className="space-y-4 pt-4">
-                        <Field label="No. de Registro" path="prosec.numeroRegistro" value={formData.prosec?.numeroRegistro} onChange={handleChange} />
-                        <Field label="Sector" path="prosec.sector" value={formData.prosec?.sector} onChange={handleChange} />
-                        <Field label="Fecha de Autorización" path="prosec.fechaAutorizacion" value={formData.prosec?.fechaAutorizacion} onChange={handleChange} type="date" />
-                    </TabsContent>
-                 </Tabs>
-            </DialogContent>
-            <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancelar</Button>
-                <Button type="submit" disabled={isSaving}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Guardar Cambios
-                </Button>
-            </DialogFooter>
-        </form>
+        <DialogContent className="space-y-6">
+            <div>
+                <h3 className="font-semibold">IMMEX</h3>
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                    <Input name="immex.numeroRegistro" placeholder="Número de Registro" value={formData.immex?.numeroRegistro || ''} onChange={handleChange} />
+                    <Input name="immex.modalidad" placeholder="Modalidad" value={formData.immex?.modalidad || ''} onChange={handleChange} />
+                    <Input name="immex.fechaAutorizacion" placeholder="Fecha Autorización" type="date" value={formData.immex?.fechaAutorizacion || ''} onChange={handleChange} />
+                </div>
+            </div>
+             <div className="pt-6 border-t">
+                <h3 className="font-semibold">PROSEC</h3>
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                    <Input name="prosec.numeroRegistro" placeholder="Número de Registro" value={formData.prosec?.numeroRegistro || ''} onChange={handleChange} />
+                    <Input name="prosec.sector" placeholder="Sector" value={formData.prosec?.sector || ''} onChange={handleChange} />
+                    <Input name="prosec.fechaAutorizacion" placeholder="Fecha Autorización" type="date" value={formData.prosec?.fechaAutorizacion || ''} onChange={handleChange} />
+                </div>
+            </div>
+        </DialogContent>
+        <DialogFooter>
+            <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+            </Button>
+        </DialogFooter>
     </Dialog>
   );
 };
-
-const Field: React.FC<{label: string, path: string, value: string | undefined, onChange: (p: string, v: string) => void, type?: string}> = ({ label, path, value, onChange, type="text" }) => (
-    <div>
-        <label className="text-sm font-medium">{label}</label>
-        <Input type={type} value={value || ''} onChange={e => onChange(path, e.target.value)} className="mt-1" />
-    </div>
-);
 
 export default ProgramsDialog;

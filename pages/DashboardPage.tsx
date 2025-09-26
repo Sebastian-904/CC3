@@ -1,110 +1,86 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../hooks/useApp';
-import { CalendarEvent } from '../lib/types';
 import DashboardKPIs from '../components/dashboard/DashboardKPIs';
 import CalendarSection from '../components/dashboard/CalendarSection';
 import DailyEventsList from '../components/dashboard/DailyEventsList';
-import EventDetails from '../components/dashboard/EventDetails';
-import TaskStatusChart from '../components/dashboard/TaskStatusChart';
-import { Loader2, Sparkles, ShieldCheck } from 'lucide-react';
+import ComplianceNewsFeed from '../components/dashboard/ComplianceNewsFeed';
 import AIAssistantDialog from '../components/dashboard/AIAssistantDialog';
 import Button from '../components/ui/Button';
-import AIHealthCheckDialog from '../components/dashboard/AIHealthCheckDialog';
-import ComplianceNewsFeed from '../components/dashboard/ComplianceNewsFeed';
+import { Sparkles, CalendarPlus } from 'lucide-react';
 import TaskEditDialog from '../components/dashboard/TaskEditDialog';
-
+import { CalendarEvent } from '../lib/types';
+import { useToast } from '../hooks/useToast';
 
 const DashboardPage: React.FC = () => {
-    const { events, loading, taskCategories } = useApp();
+    const { events, addEvent, taskCategories } = useApp();
+    const { toast } = useToast();
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-    const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
-    const [isHealthCheckOpen, setIsHealthCheckOpen] = useState(false);
+    const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
+    const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
 
-    // State for the unified TaskEditDialog
-    const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
-    const [taskInitialData, setTaskInitialData] = useState<Partial<Omit<CalendarEvent, 'id' | 'companyId'>> | undefined>(undefined);
-
-    const handleSelectEvent = (event: CalendarEvent) => {
-        setSelectedEvent(event);
+    const handleCreateTaskFromNews = async (task: { title: string; description: string }) => {
+        try {
+            const newTask: Omit<CalendarEvent, 'id' | 'companyId'> = {
+                title: task.title,
+                description: task.description,
+                dueDate: new Date().toISOString().split('T')[0],
+                status: 'pending',
+                priority: 'medium',
+                category: taskCategories[0]?.id || 'cat-1',
+                reminders: [],
+            };
+            await addEvent(newTask);
+            toast({
+                title: 'Task Created',
+                description: `Task "${task.title}" has been added to your calendar.`,
+            });
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to create task.',
+            });
+        }
     };
-
-    const handleCreateTaskFromNews = (task: { title: string, description: string }) => {
-        setTaskInitialData({
-            title: task.title,
-            description: task.description,
-            category: taskCategories[0]?.id || '', // Set a default category
-        });
-        setIsTaskDialogOpen(true);
-    };
-
-    const handleOpenNewTaskDialog = () => {
-        setTaskInitialData(undefined); // No pre-filled data
-        setIsTaskDialogOpen(true);
-    };
-
-    const handleCloseTaskDialog = () => {
-        setIsTaskDialogOpen(false);
-        setTaskInitialData(undefined);
-    };
-
-    if (loading) {
-        return <div className="flex h-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
-    }
 
     return (
-        <>
-            <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">Dashboard</h1>
-                     <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setIsHealthCheckOpen(true)}>
-                            <ShieldCheck className="mr-2 h-4 w-4" /> AI Health
-                        </Button>
-                        <Button size="sm" onClick={() => setIsAIAssistantOpen(true)}>
-                            <Sparkles className="mr-2 h-4 w-4" /> AI Assistant
-                        </Button>
-                    </div>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center flex-wrap gap-4">
+                <h1 className="text-2xl font-bold">Dashboard</h1>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsNewTaskDialogOpen(true)}>
+                        <CalendarPlus className="mr-2 h-4 w-4" />
+                        New Task
+                    </Button>
+                    <Button onClick={() => setIsAiAssistantOpen(true)}>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        AI Assistant
+                    </Button>
                 </div>
-
-                <DashboardKPIs events={events} />
-
-                <div className="grid gap-6 lg:grid-cols-3">
-                    <div className="lg:col-span-2 space-y-6">
-                        <CalendarSection
-                            selectedDate={selectedDate}
-                            setSelectedDate={date => {
-                                setSelectedDate(date);
-                                setSelectedEvent(null);
-                            }}
-                            events={events}
-                            onSelectEvent={handleSelectEvent}
-                        />
-                         <ComplianceNewsFeed onCreateTask={handleCreateTaskFromNews} />
-                         <DailyEventsList
-                            events={events}
-                            selectedDate={selectedDate}
-                            onSelectEvent={handleSelectEvent}
-                            selectedEventId={selectedEvent?.id}
-                            onNewTaskClick={handleOpenNewTaskDialog}
-                        />
-                    </div>
-                    <div className="lg:col-span-1">
-                        <EventDetails event={selectedEvent} clearSelection={() => setSelectedEvent(null)} />
-                    </div>
-                </div>
-
-                <TaskStatusChart events={events} />
             </div>
-            <AIAssistantDialog isOpen={isAIAssistantOpen} onClose={() => setIsAIAssistantOpen(false)} />
-            <AIHealthCheckDialog isOpen={isHealthCheckOpen} onClose={() => setIsHealthCheckOpen(false)} />
-            <TaskEditDialog
-                isOpen={isTaskDialogOpen}
-                onClose={handleCloseTaskDialog}
-                initialData={taskInitialData}
-                initialDate={selectedDate.toISOString().split('T')[0]}
-            />
-        </>
+
+            <DashboardKPIs events={events} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <CalendarSection selectedDate={selectedDate} setSelectedDate={setSelectedDate} events={events} />
+                </div>
+                <div>
+                    <DailyEventsList selectedDate={selectedDate} events={events} />
+                </div>
+            </div>
+
+            <ComplianceNewsFeed onCreateTask={handleCreateTaskFromNews} />
+
+            <AIAssistantDialog isOpen={isAiAssistantOpen} onClose={() => setIsAiAssistantOpen(false)} />
+            
+            {isNewTaskDialogOpen && (
+                <TaskEditDialog
+                    isOpen={isNewTaskDialogOpen}
+                    onClose={() => setIsNewTaskDialogOpen(false)}
+                />
+            )}
+        </div>
     );
 };
 

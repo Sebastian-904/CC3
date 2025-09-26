@@ -1,79 +1,92 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
-import Badge from '../components/ui/Badge';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import { GanttChartSquare, Loader2, User as UserIcon } from 'lucide-react';
-import { MOCK_USERS } from '../services/firebaseService';
-import { UserProfile } from '../lib/types';
+import { useToast } from '../hooks/useToast';
+import { getMockLoginUsers } from '../services/firebaseService';
+import { UserProfile, UserRole } from '../lib/types';
+import { useLanguage } from '../hooks/useLanguage';
+import { cn } from '../lib/utils';
+import Button from '../components/ui/Button';
 
-const LoginPage = () => {
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
-    const navigate = useNavigate();
+const LoginPage: React.FC = () => {
+    const { user, login, loading: authLoading } = useAuth();
+    const { toast } = useToast();
+    const { t } = useLanguage();
+    const [loginUsers, setLoginUsers] = useState<UserProfile[]>([]);
+    const [isLoggingIn, setIsLoggingIn] = useState<string | null>(null);
 
-    const handleLogin = async (user: UserProfile) => {
-        setError('');
-        setLoading(true);
+    useEffect(() => {
+        const users = getMockLoginUsers();
+        setLoginUsers(users);
+    }, []);
+
+    const handleLogin = async (loginUser: UserProfile) => {
+        setIsLoggingIn(loginUser.uid);
         try {
-            // The password doesn't matter in the mock service
-            await login(user.email, 'password');
-            navigate('/dashboard');
+            await login(loginUser.email, 'password');
+            toast({ title: t('loginSuccessTitle'), description: t('loginSuccessDesc') });
         } catch (err) {
-            setError('Failed to log in. Please try again.');
-            console.error(err);
-            setLoading(false);
+            toast({ variant: "destructive", title: t('loginFailedTitle'), description: t('loginFailedDesc') });
+            setIsLoggingIn(null);
         }
     };
-    
-    const getRoleBadgeVariant = (role: UserProfile['role']) => {
-        switch(role) {
-            case 'admin': return 'destructive';
-            case 'consultor': return 'secondary';
-            default: return 'outline';
-        }
+
+    const tRole = (role: UserRole) => {
+        const roles: Record<UserRole, string> = {
+            admin: t('roleAdmin'),
+            consultor: t('roleConsultant'),
+            cliente: t('roleClient')
+        };
+        return roles[role];
+    }
+
+    if (authLoading) {
+        return <div className="flex h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
+    }
+
+    if (user) {
+        return <Navigate to="/dashboard" replace />;
     }
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-secondary/50 p-4">
-            <Card className="w-full max-w-md">
+            <Card className="w-full max-w-lg">
                 <CardHeader className="text-center">
-                    <div className="mx-auto mb-4 flex items-center justify-center">
-                       <GanttChartSquare className="h-10 w-10 text-primary" />
-                       <span className="ml-3 text-3xl font-bold">CompliancePro</span>
+                    <div className="flex justify-center items-center gap-2 mb-2">
+                        <GanttChartSquare className="h-8 w-8 text-primary" />
+                        <CardTitle className="text-3xl font-bold">CompliancePro</CardTitle>
                     </div>
-                    <CardTitle className="text-2xl">Select a Profile</CardTitle>
-                    <CardDescription>Click a profile to get instant access.</CardDescription>
+                    <CardDescription>{t('loginPageDescription')}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                    {loading && (
-                        <div className="flex justify-center items-center p-4">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="ml-2 text-muted-foreground">Logging in...</p>
-                        </div>
-                    )}
-                    {error && <p className="text-sm text-destructive text-center">{error}</p>}
-                    
-                    {!loading && MOCK_USERS.map((user) => (
-                        <button
-                            key={user.uid}
-                            onClick={() => handleLogin(user)}
-                            className="w-full text-left p-3 rounded-lg border flex items-center gap-4 hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        >
-                            <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                                <UserIcon className="h-6 w-6 text-secondary-foreground" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-semibold">{user.displayName}</p>
-                                <p className="text-sm text-muted-foreground">{user.email}</p>
-                            </div>
-                             <Badge variant={getRoleBadgeVariant(user.role)}>
-                                {user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </Badge>
-                        </button>
-                    ))}
+                <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {loginUsers.map((profile) => (
+                            <Card
+                                key={profile.uid}
+                                className={cn(
+                                    "text-center p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:shadow-lg hover:border-primary",
+                                    isLoggingIn === profile.uid && "ring-2 ring-primary"
+                                )}
+                                onClick={() => !isLoggingIn && handleLogin(profile)}
+                            >
+                                <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-2">
+                                    {isLoggingIn === profile.uid ? (
+                                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                    ) : (
+                                        <UserIcon className="w-8 h-8 text-secondary-foreground" />
+                                    )}
+                                </div>
+                                <p className="font-semibold text-sm">{profile.displayName}</p>
+                                <p className="text-xs text-muted-foreground">{tRole(profile.role)}</p>
+                            </Card>
+                        ))}
+                    </div>
                 </CardContent>
+                 <CardFooter>
+                    <p className="text-xs text-muted-foreground mx-auto">{t('loginPageTitle')}</p>
+                </CardFooter>
             </Card>
         </div>
     );

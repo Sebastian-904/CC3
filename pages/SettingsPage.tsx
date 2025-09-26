@@ -13,7 +13,7 @@ import { UserProfile } from '../lib/types';
 const SettingsPage = () => {
     const { user, updateUserProfile, loading: authLoading } = useAuth();
     const { theme, setTheme } = useTheme();
-    const { language, setLanguage, t } = useLanguage();
+    const { t } = useLanguage();
     const { toast } = useToast();
 
     const [profile, setProfile] = useState<Partial<UserProfile>>({});
@@ -109,14 +109,7 @@ const SettingsPage = () => {
                     <CardTitle>{t('displayPreferences')}</CardTitle>
                     <CardDescription>{t('customizeAppearance')}</CardDescription>
                 </CardHeader>
-                <CardContent className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="language" className="text-sm font-medium">{t('language')}</label>
-                        <select id="language" value={language} onChange={e => setLanguage(e.target.value as 'en' | 'es')} className="mt-1 block w-full rounded-md border-input bg-background h-10 px-3">
-                            <option value="es">Español</option>
-                            <option value="en">English</option>
-                        </select>
-                    </div>
+                <CardContent className="grid gap-4">
                     <div>
                         <label htmlFor="theme" className="text-sm font-medium">{t('theme')}</label>
                         <select id="theme" value={theme} onChange={e => setTheme(e.target.value as 'light' | 'dark' | 'system')} className="mt-1 block w-full rounded-md border-input bg-background h-10 px-3">

@@ -1,145 +1,94 @@
-import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { UploadCloud, File, AlertTriangle, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/Card';
+import { Loader2, UploadCloud, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { useToast } from '../../hooks/useToast';
 import { useApp } from '../../hooks/useApp';
 import { extractCompanyDataFromDocument } from '../../services/geminiService';
-import Progress from '../ui/Progress';
+import { useToast } from '../../hooks/useToast';
 
-type Status = 'idle' | 'uploading' | 'processing' | 'error';
-const statusMessages: Record<Exclude<Status, 'idle' | 'error'>, string> = {
-    uploading: "Reading file...",
-    processing: "AI is analyzing the document...",
-};
+function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = error => reject(error);
+    });
+}
 
 const AIProfileImporter: React.FC = () => {
-    const [status, setStatus] = useState<Status>('idle');
-    const [progress, setProgress] = useState(0);
-    const [error, setError] = useState<string | null>(null);
+    const { setImportedCompanyData } = useApp();
     const { toast } = useToast();
     const navigate = useNavigate();
-    const { setImportedCompanyData, activeCompany } = useApp();
+    const [isLoading, setIsLoading] = useState(false);
 
-    const processFile = async (file: File) => {
-        if (!activeCompany) {
-            setError("No active company selected. Please ensure you are in a company's workspace.");
-            setStatus('error');
-            return;
-        }
-
-        setStatus('uploading');
-        setError(null);
-        setProgress(30);
+    const onDrop = useCallback(async (acceptedFiles: File[]) => {
+        if (acceptedFiles.length === 0) return;
+        
+        const file = acceptedFiles[0];
+        setIsLoading(true);
 
         try {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const base64String = (reader.result as string).split(',')[1];
-                if (!base64String) {
-                    throw new Error("Failed to read file.");
-                }
-
-                setProgress(60);
-                setStatus('processing');
-                
-                const extractedData = await extractCompanyDataFromDocument({
-                    base64: base64String,
-                    mimeType: file.type,
-                });
-                
-                setProgress(100);
-                setImportedCompanyData(extractedData);
-                toast({
-                    title: "Analysis Complete",
-                    description: "Review the extracted data before saving.",
-                });
-                navigate('/import-review');
-            };
-            reader.onerror = () => {
-                throw new Error("Could not read the selected file.");
-            };
-        } catch (err) {
-            console.error("File processing error:", err);
-            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
-            setError(`Failed to process document. ${errorMessage}`);
-            setStatus('error');
-            toast({
-                variant: 'destructive',
-                title: "Processing Failed",
-                description: errorMessage,
+            const base64 = await fileToBase64(file);
+            const extractedData = await extractCompanyDataFromDocument({ base64, mimeType: file.type });
+            setImportedCompanyData(extractedData);
+            navigate('/import-review');
+        } catch (error) {
+             toast({
+                variant: "destructive",
+                title: "Extraction Failed",
+                description: error instanceof Error ? error.message : "An unknown error occurred.",
             });
-            setProgress(0);
+        } finally {
+            setIsLoading(false);
         }
-    };
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-        if (acceptedFiles.length > 0) {
-            processFile(acceptedFiles[0]);
-        } else {
-            toast({
-                variant: 'destructive',
-                title: "Invalid File",
-                description: "The selected file is not supported. Please upload a PDF, DOCX, or XLSX file.",
-            });
-        }
-    }, []);
+    }, [setImportedCompanyData, navigate, toast]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
-        accept: {
-            'application/pdf': ['.pdf'],
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-        },
         multiple: false,
+        accept: { 'application/pdf': ['.pdf'] }
     });
 
-    if (status === 'uploading' || status === 'processing') {
-        return (
-            <div className="text-center p-8 border-2 border-dashed rounded-lg">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary mb-4" />
-                <h3 className="text-lg font-semibold">{statusMessages[status]}</h3>
-                <p className="text-muted-foreground text-sm">This may take a few moments...</p>
-                <Progress value={progress} className="w-full max-w-sm mx-auto mt-4" />
-            </div>
-        )
-    }
-    
-    if (status === 'error') {
-         return (
-            <div className="text-center p-8 border-2 border-dashed border-destructive/50 bg-destructive/10 rounded-lg">
-                <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
-                <h3 className="text-lg font-semibold text-destructive">An Error Occurred</h3>
-                <p className="text-destructive/80 text-sm mb-4">{error}</p>
-                <button onClick={() => setStatus('idle')} className="text-sm font-semibold text-primary hover:underline">
-                    Try Again
-                </button>
-            </div>
-        )
-    }
-
     return (
-        <div
-            {...getRootProps()}
-            className={cn(
-                "p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors",
-                isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
-            )}
-        >
-            <input {...getInputProps()} />
-            <div className="mx-auto h-12 w-12 rounded-full bg-secondary flex items-center justify-center mb-4">
-                 <UploadCloud className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold">
-                {isDragActive ? "Drop the file here..." : "Click to upload or drag & drop"}
-            </h3>
-            <p className="text-muted-foreground text-sm">
-                PDF, DOCX, or XLSX accepted.
-            </p>
-        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-yellow-500" />
+                    AI Company Profile Importer
+                </CardTitle>
+                <CardDescription>
+                    Upload a company document (e.g., Acta Constitutiva) to automatically extract and populate the company profile.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div
+                    {...getRootProps()}
+                    className={cn(
+                        "p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors",
+                        isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50',
+                        isLoading && 'cursor-wait'
+                    )}
+                >
+                    <input {...getInputProps()} disabled={isLoading} />
+                    {isLoading ? (
+                        <>
+                            <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+                            <p className="mt-4 font-semibold">AI is analyzing your document...</p>
+                            <p className="text-sm text-muted-foreground">This may take a moment.</p>
+                        </>
+                    ) : (
+                        <>
+                            <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                            <p className="mt-2 font-semibold">Drag & drop a document here, or click to select</p>
+                            <p className="text-xs text-muted-foreground">PDF documents only</p>
+                        </>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
     );
 };
 

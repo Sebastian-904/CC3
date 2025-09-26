@@ -1,8 +1,7 @@
-import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { translations } from '../lib/translations';
+import React, { createContext, ReactNode, useCallback } from 'react';
+import { translations, TranslationKey } from '../lib/translations';
 
-type Language = 'en' | 'es';
-export type TranslationKey = keyof typeof translations.en;
+type Language = 'es';
 
 interface LanguageContextType {
     language: Language;
@@ -13,24 +12,20 @@ interface LanguageContextType {
 export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [language, setLanguage] = useState<Language>(() => {
-        const storedLang = localStorage.getItem('appLanguage') as Language | null;
-        return storedLang || 'es'; // Default to Spanish
-    });
+    const language: Language = 'es';
 
-    useEffect(() => {
-        localStorage.setItem('appLanguage', language);
-    }, [language]);
+    const setLanguage = () => {
+        // El idioma está fijo en español, esta función no hace nada.
+    };
 
     const t = useCallback((key: TranslationKey, fallback?: string) => {
-        // This nested key access is a bit unsafe, but works for the current flat structure.
-        // A more robust solution would use a getter function.
-        const translationSet = translations[language] as Record<TranslationKey, string>;
-        return translationSet[key] || fallback || key;
-    }, [language]);
+        return translations[key] || fallback || key;
+    }, []);
+
+    const value = { language, setLanguage, t };
 
     return (
-        <LanguageContext.Provider value={{ language, setLanguage, t }}>
+        <LanguageContext.Provider value={value}>
             {children}
         </LanguageContext.Provider>
     );

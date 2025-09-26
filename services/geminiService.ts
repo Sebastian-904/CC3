@@ -1,248 +1,193 @@
+import { GoogleGenAI, Type } from '@google/genai';
+import { AIExtractedCompany, AITaskSuggestion } from '../lib/types';
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { AIExtractedCompany, Company } from "../lib/types";
-
-// Ensure the API key is available in the environment variables
-if (!process.env.API_KEY) {
-    // In a real app, you might want to handle this more gracefully,
-    // but for this context, throwing an error is clear.
-}
-
+// FIX: Per coding guidelines, initialize GoogleGenAI with a named apiKey parameter.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const model = 'gemini-2.5-flash';
+const taskSuggestionSchema = {
+  type: Type.OBJECT,
+  properties: {
+    isTaskSuggestion: { type: Type.BOOLEAN, description: 'Always true if the user is asking to create a task.' },
+    task: {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING, description: 'The title of the task.' },
+        description: { type: Type.STRING, description: 'A detailed description of the task.' },
+        dueDate: { type: Type.STRING, description: 'The due date for the task in YYYY-MM-DD format.' },
+      },
+      required: ['title', 'description', 'dueDate'],
+    },
+  },
+  required: ['isTaskSuggestion', 'task'],
+};
 
-const defaultSystemInstruction = `You are a helpful assistant for a compliance management application.
-When asked to create a task from natural language, you MUST respond with a JSON object in the following format:
-{"isTaskSuggestion": true, "task": {"title": "Task Title", "dueDate": "YYYY-MM-DD", "description": "A brief description of the task."}}
-If you cannot extract a task, or if the user is just chatting, provide a helpful, conversational response as plain text.
-Today's date is ${new Date().toISOString().split('T')[0]}.`;
+export const getAIAssistantResponse = async (prompt: string): Promise<string | AITaskSuggestion> => {
+  try {
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: `Analyze the following user request. If it's a request to create a task, reminder, or calendar event, respond ONLY with a JSON object that follows the provided schema. Otherwise, provide a helpful, conversational response as a plain string. User request: "${prompt}"`,
+          config: {
+              responseMimeType: "application/json",
+              responseSchema: taskSuggestionSchema,
+          }
+      });
 
-export const getAIAssistantResponse = async (prompt: string, customSystemInstruction?: string): Promise<string> => {
-    if (!process.env.API_KEY) {
-        return "Sorry, the AI Assistant is not configured. Missing API Key.";
-    }
+      // FIX: Per coding guidelines, directly access the .text property for the response.
+      const textResponse = response.text;
+      
+      // Attempt to parse as a task suggestion
+      try {
+          const parsed = JSON.parse(textResponse);
+          if (parsed.isTaskSuggestion && parsed.task) {
+              return parsed as AITaskSuggestion;
+          }
+      } catch (e) {
+          // Not a JSON object, treat as a regular string response
+      }
+
+      // Fallback to text if it's not a valid task suggestion JSON
+      const fallbackResponse = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: {
+              systemInstruction: "You are a helpful assistant for a compliance management software. Be concise and helpful."
+          }
+      });
+
+      // FIX: Per coding guidelines, directly access the .text property for the response.
+      return fallbackResponse.text;
+
+  } catch (error) {
+      console.error("Error getting AI assistant response:", error);
+      // Try to parse the error to give a more specific message
+      if (error instanceof Error && error.message.includes('API key not valid')) {
+          throw new Error("Invalid API Key. Please check your configuration.");
+      }
+      throw new Error("The AI assistant is currently unavailable. Please try again later.");
+  }
+};
+
+
+const companyExtractionSchema = {
+  type: Type.OBJECT,
+  properties: {
+      name: {
+          type: Type.OBJECT,
+          properties: {
+              value: { type: Type.STRING, description: "The full legal name of the company (Razón Social)." },
+              confidence: { type: Type.NUMBER, description: "Confidence score from 0.0 to 1.0." }
+          },
+          required: ['value', 'confidence'],
+      },
+      general: {
+          type: Type.OBJECT,
+          properties: {
+              datosFiscales: {
+                  type: Type.OBJECT,
+                  properties: {
+                      razonSocial: {
+                          type: Type.OBJECT,
+                          properties: {
+                              value: { type: Type.STRING, description: "The full legal name of the company (Razón Social)." },
+                              confidence: { type: Type.NUMBER, description: "Confidence score from 0.0 to 1.0." }
+                          },
+                          required: ['value', 'confidence'],
+                      },
+                      rfc: {
+                           type: Type.OBJECT,
+                          properties: {
+                              value: { type: Type.STRING, description: "The company's RFC (Registro Federal de Contribuyentes)." },
+                              confidence: { type: Type.NUMBER, description: "Confidence score from 0.0 to 1.0." }
+                          },
+                          required: ['value', 'confidence'],
+                      }
+                  },
+                  required: ['razonSocial', 'rfc'],
+              }
+          },
+          required: ['datosFiscales'],
+      }
+  },
+  required: ['name', 'general'],
+};
+
+export const extractCompanyDataFromDocument = async (document: { base64: string, mimeType: string }): Promise<AIExtractedCompany> => {
     try {
-        const response = await ai.models.generateContent({
-            model: model,
-            contents: prompt,
-            config: {
-                systemInstruction: customSystemInstruction || defaultSystemInstruction,
+        const imagePart = {
+            inlineData: {
+                data: document.base64,
+                mimeType: document.mimeType,
             },
+        };
+        const textPart = {
+            text: "Extract the company's legal name (razón social) and RFC from this document. Provide your answer ONLY in the specified JSON format, with a confidence score for each field."
+        };
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: { parts: [imagePart, textPart] },
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: companyExtractionSchema,
+            }
         });
-        
-        return response.text.trim();
+
+        // FIX: Per coding guidelines, directly access the .text property for the response.
+        const jsonStr = response.text.trim();
+        return JSON.parse(jsonStr) as AIExtractedCompany;
     } catch (error) {
-        console.error("Error calling Gemini API:", error);
-        if (error instanceof Error) {
-            return `Sorry, I encountered an error: ${error.message}`;
-        }
-        return "Sorry, I encountered an unknown error while processing your request.";
+        console.error("Error extracting company data:", error);
+        throw new Error("Failed to extract data from the document. The document might be unreadable or in an unsupported format.");
     }
 };
 
-export const getComplianceNews = async (companyProfile: { sector?: string, programs?: string[] }): Promise<{ summary: string; sources: { uri: string; title: string }[] }> => {
-    if (!process.env.API_KEY) {
-        throw new Error("AI Assistant is not configured. Missing API Key.");
-    }
 
-    // Construct a dynamic prompt
-    let prompt = "What are the latest tax and customs compliance news and regulation updates in Mexico?";
-    const relevantInfo = [];
-    if (companyProfile.sector) {
-        relevantInfo.push(`a company in the ${companyProfile.sector} sector`);
-    }
-    if (companyProfile.programs && companyProfile.programs.length > 0) {
-        relevantInfo.push(`with ${companyProfile.programs.join(' and ')} programs`);
-    }
-    if (relevantInfo.length > 0) {
-        prompt += ` This is relevant for ${relevantInfo.join(' ')}.`;
-    }
-    prompt += " Summarize the key points and potential impacts in a list format.";
-
+export const getComplianceNews = async (companyProfile: { sector?: string, programs: string[] }): Promise<{ summary: string, sources: { uri: string; title: string }[] }> => {
+    const prompt = `Based on the latest news from reliable sources, what are the most recent and important compliance updates in Mexico related to foreign trade, customs, and fiscal regulations? The company operates in the "${companyProfile.sector || 'general manufacturing'}" sector and has the following programs: ${companyProfile.programs.join(', ')}. Summarize the key points and provide the source URLs.`;
+    
     try {
         const response = await ai.models.generateContent({
-            model: model,
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
             },
         });
 
-        const summary = response.text.trim();
-        const rawChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        
-        // FIX: The API may return `unknown`, so we ensure it's an array before reducing.
-        const sources = Array.isArray(rawChunks) ? (rawChunks as any[]).reduce(
-            (acc: { uri: string; title: string }[], chunk: any) => {
-                const web = chunk?.web;
-                if (web && web.uri && web.title) {
-                    acc.push({ uri: web.uri, title: web.title });
-                }
-                return acc;
-            },
-            [] as { uri: string; title: string }[]
-        ) : [];
-        
-        // Deduplicate sources
-        const uniqueSources = Array.from(new Map(sources.map(s => [s.uri, s])).values());
+        // FIX: Per coding guidelines, directly access the .text property for the response.
+        const summary = response.text;
+        // FIX: Per coding guidelines, access grounding chunks for sources.
+        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+        const sources = groundingChunks ? groundingChunks.map(chunk => chunk.web).filter(s => s?.uri && s?.title) as { uri: string, title: string }[] : [];
 
-        return { summary, sources: uniqueSources };
-
+        return { summary, sources };
     } catch (error) {
-        console.error("Error calling Gemini API for news grounding:", error);
-        if (error instanceof Error) {
-            throw new Error(`AI news search failed: ${error.message}`);
-        }
-        throw new Error("An unknown error occurred during AI news search.");
+        console.error("Error fetching compliance news:", error);
+        throw new Error("Failed to fetch compliance news. Please check your connection or try again later.");
     }
 };
 
-const withAIExtraSchema = (type: Type, description: string) => ({
-    type: Type.OBJECT,
-    properties: {
-        value: { type, description },
-        confidence: { type: Type.NUMBER, description: "Your confidence in the accuracy of this value, from 0.0 to 1.0." },
-        source: { type: Type.STRING, description: "The exact text snippet from the document where you found this value." }
-    },
-    required: ["value", "confidence", "source"],
-});
+export const summarizeLegalDocument = async (document: { base64: string, mimeType: string }): Promise<string> => {
+  try {
+      const docPart = {
+          inlineData: {
+              data: document.base64,
+              mimeType: document.mimeType,
+          },
+      };
+      const textPart = {
+          text: "Summarize this legal document in 3-4 key bullet points, focusing on obligations, prohibitions, or recent changes relevant to a company. The summary should be concise and easy to understand for a non-lawyer."
+      };
 
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: { parts: [docPart, textPart] },
+      });
 
-const companyDataSchema = {
-    type: Type.OBJECT,
-    properties: {
-        name: withAIExtraSchema(Type.STRING, "The full legal name of the company."),
-        general: {
-            type: Type.OBJECT,
-            properties: {
-                datosFiscales: {
-                    type: Type.OBJECT,
-                    properties: {
-                        razonSocial: withAIExtraSchema(Type.STRING, "Fiscal name (Razón Social)."),
-                        rfc: withAIExtraSchema(Type.STRING, "Tax ID (RFC)."),
-                        telefono: withAIExtraSchema(Type.STRING, "Primary phone number."),
-                        domicilioFiscal: withAIExtraSchema(Type.STRING, "Fiscal address.")
-                    }
-                },
-                actaConstitutiva: {
-                    type: Type.OBJECT,
-                    properties: {
-                        numeroEscritura: withAIExtraSchema(Type.STRING, "Public instrument number for incorporation."),
-                        fecha: withAIExtraSchema(Type.STRING, "Date of incorporation (YYYY-MM-DD)."),
-                        nombreFedatario: withAIExtraSchema(Type.STRING, "Name of the notary public for incorporation.")
-                    }
-                },
-                representanteLegal: {
-                    type: Type.OBJECT,
-                    properties: {
-                        numeroEscrituraPoder: withAIExtraSchema(Type.STRING, "Public instrument number for power of attorney."),
-                        fechaPoder: withAIExtraSchema(Type.STRING, "Date of power of attorney (YYYY-MM-DD)."),
-                        nombreFedatario: withAIExtraSchema(Type.STRING, "Name of the notary public for power of attorney.")
-                    }
-                }
-            }
-        },
-        programas: {
-            type: Type.OBJECT,
-            properties: {
-                immex: {
-                    type: Type.OBJECT,
-                    properties: {
-                        numeroRegistro: withAIExtraSchema(Type.STRING, "IMMEX registration number."),
-                        modalidad: withAIExtraSchema(Type.STRING, "IMMEX modality (e.g., Industrial, Servicios)."),
-                        fechaAutorizacion: withAIExtraSchema(Type.STRING, "IMMEX authorization date (YYYY-MM-DD).")
-                    },
-                    nullable: true,
-                },
-                prosec: {
-                     type: Type.OBJECT,
-                    properties: {
-                        numeroRegistro: withAIExtraSchema(Type.STRING, "PROSEC registration number."),
-                        sector: withAIExtraSchema(Type.STRING, "PROSEC sector."),
-                        fechaAutorizacion: withAIExtraSchema(Type.STRING, "PROSEC authorization date (YYYY-MM-DD).")
-                    },
-                    nullable: true,
-                }
-            }
-        },
-        miembros: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    nombre: withAIExtraSchema(Type.STRING, "Full name of the board member or partner."),
-                    rfc: withAIExtraSchema(Type.STRING, "Tax ID (RFC) of the member.")
-                }
-            },
-             nullable: true,
-        },
-        domicilios: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    direccionCompleta: withAIExtraSchema(Type.STRING, "Full address of an operational facility."),
-                    telefono: withAIExtraSchema(Type.STRING, "Phone number for the facility.")
-                }
-            },
-             nullable: true,
-        },
-        agentesAduanales: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    nombre: withAIExtraSchema(Type.STRING, "Name of the customs agent or agency."),
-                    numeroPatente: withAIExtraSchema(Type.STRING, "Customs patent number.")
-                }
-            },
-            nullable: true,
-        }
-    }
-};
-
-export const extractCompanyDataFromDocument = async (file: {
-    base64: string;
-    mimeType: string;
-}): Promise<AIExtractedCompany> => {
-     if (!process.env.API_KEY) {
-        throw new Error("AI Assistant is not configured. Missing API Key.");
-    }
-
-    const systemInstruction = `You are an expert data extraction AI. Your task is to analyze the provided document and extract key information about a company.
-Carefully read the document and populate the JSON schema with the information you find.
-For each field, you MUST provide:
-1.  'value': The extracted data point.
-2.  'confidence': A score from 0.0 to 1.0 indicating your confidence in the accuracy of the value.
-3.  'source': The exact text snippet from the document where you found the value.
-If you cannot find a specific piece of information, leave its 'value' field as an empty string "" and set 'confidence' to 0.0.
-Do not invent or infer information that isn't present in the text.`;
-    
-    try {
-        const response = await ai.models.generateContent({
-            model: model,
-            contents: {
-                parts: [
-                    { inlineData: { data: file.base64, mimeType: file.mimeType } },
-                    { text: "Please extract the company information from this document." }
-                ],
-            },
-            config: {
-                systemInstruction,
-                responseMimeType: 'application/json',
-                responseSchema: companyDataSchema,
-            },
-        });
-        
-        const jsonText = response.text.trim();
-        return JSON.parse(jsonText) as AIExtractedCompany;
-
-    } catch (error) {
-        console.error("Error calling Gemini API for data extraction:", error);
-        if (error instanceof Error) {
-            throw new Error(`AI data extraction failed: ${error.message}`);
-        }
-        throw new Error("An unknown error occurred during AI data extraction.");
-    }
+      // FIX: Per coding guidelines, directly access the .text property for the response.
+      return response.text;
+  } catch (error) {
+      console.error("Error summarizing document:", error);
+      throw new Error("Failed to generate summary for the document.");
+  }
 };

@@ -1,70 +1,73 @@
 import React, { useState, useRef } from 'react';
-import { LogOut, User as UserIcon, Menu } from 'lucide-react';
+import { Menu, User, LogOut, Sun, Moon, Settings } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { useApp } from '../hooks/useApp';
+import { useTheme } from '../hooks/useTheme';
 import Button from './ui/Button';
-import useOnClickOutside from '../hooks/useOnClickOutside';
-import NotificationsMenu from './NotificationsMenu';
 import { useLanguage } from '../hooks/useLanguage';
+import useOnClickOutside from '../hooks/useOnClickOutside';
+import { useNavigate } from 'react-router-dom';
+import NotificationsMenu from './NotificationsMenu';
 
 interface AppHeaderProps {
-    onMenuClick: () => void;
+  onMenuClick: () => void;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
-    const { user, logout } = useAuth();
-    const { activeCompany } = useApp();
-    const { t } = useLanguage();
-    const [menuOpen, setMenuOpen] = useState(false);
-    const menuRef = useRef<HTMLDivElement>(null);
+  const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
-    useOnClickOutside(menuRef, () => setMenuOpen(false));
+  useOnClickOutside(userMenuRef, () => setIsUserMenuOpen(false));
 
-    return (
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-            <Button
-                variant="outline"
-                size="icon"
-                className="lg:hidden"
-                onClick={onMenuClick}
-            >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle Menu</span>
-            </Button>
-            <div className="flex-1">
-                <h1 className="text-xl font-semibold truncate">{activeCompany?.name || t('dashboard')}</h1>
-            </div>
-            <div className="flex items-center gap-2">
-                <NotificationsMenu />
-                <div className="relative" ref={menuRef}>
-                    <Button variant="ghost" size="icon" className="rounded-full w-8 h-8" onClick={() => setMenuOpen(!menuOpen)}>
-                        <UserIcon className="h-5 w-5" />
-                    </Button>
-                    {menuOpen && (
-                        <div 
-                            className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card border ring-1 ring-black ring-opacity-5 animate-in fade-in-0 zoom-in-95"
-                        >
-                            <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                                <div className="px-4 py-2 text-sm text-foreground">
-                                    <p className="font-semibold truncate">{user?.displayName}</p>
-                                    <p className="text-muted-foreground truncate">{user?.email}</p>
-                                </div>
-                                <div className="border-t border-border"></div>
-                                <a href="#/settings" onClick={() => setMenuOpen(false)} className="flex items-center w-full text-left px-4 py-2 text-sm text-foreground hover:bg-accent" role="menuitem">
-                                    <UserIcon className="mr-2 h-4 w-4" />
-                                    <span>{t('myProfile')}</span>
-                                </a>
-                                <button onClick={logout} className="flex items-center w-full text-left px-4 py-2 text-sm text-foreground hover:bg-accent" role="menuitem">
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>{t('logout')}</span>
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </header>
-    );
+  const handleLogout = () => {
+      logout();
+      navigate('/login');
+  }
+
+  return (
+    <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
+      <Button variant="outline" size="icon" className="shrink-0" onClick={onMenuClick}>
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle navigation menu</span>
+      </Button>
+      
+      {/* The problematic spacer div was removed and ml-auto was added to the next div to push it to the right */}
+      <div className="flex items-center gap-2 ml-auto">
+          <NotificationsMenu />
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              <span className="sr-only">Toggle theme</span>
+          </Button>
+          <div className="relative" ref={userMenuRef}>
+              <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">Toggle user menu</span>
+              </Button>
+              {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-popover border text-popover-foreground animate-in fade-in-0 zoom-in-95">
+                      <div className="p-2 border-b">
+                          <p className="text-sm font-medium">{user?.displayName}</p>
+                          <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      </div>
+                      <nav className="p-1">
+                          <button onClick={() => { navigate('/settings'); setIsUserMenuOpen(false); }} className="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent">
+                              <Settings className="h-4 w-4" />
+                              <span>{t('settings')}</span>
+                          </button>
+                           <button onClick={handleLogout} className="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent">
+                              <LogOut className="h-4 w-4" />
+                              <span>{t('logout')}</span>
+                          </button>
+                      </nav>
+                  </div>
+              )}
+          </div>
+      </div>
+    </header>
+  );
 };
 
 export default AppHeader;

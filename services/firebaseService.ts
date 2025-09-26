@@ -1,268 +1,82 @@
+import { UserProfile, Company, CalendarEvent, TaskCategory, Obligation, Notification, ComplianceDocument } from "../lib/types";
 
-// ---
-// title: services/firebaseService.ts
-// ---
-// MOCK Firebase Service
-// This file simulates a Firebase backend for demonstration purposes.
+// Mock Data
 
-import { UserProfile, Company, CalendarEvent, Obligation, Notification, TaskCategory } from '../lib/types';
-import { v4 as uuidv4 } from 'uuid';
-
-// --- MOCK DATABASE ---
-
-export const MOCK_USERS: UserProfile[] = [
-    { uid: 'user-1', email: 'admin@compliance.pro', displayName: 'Admin User', avatarUrl: 'https://i.pravatar.cc/150?u=user-1', role: 'admin', companyId: 'comp-1', companyName: 'Global Exports Inc.', emailPreferences: { taskAssigned: true, taskDue: true, commentMention: true, dailySummary: false } },
-    { uid: 'user-2', email: 'consultant@compliance.pro', displayName: 'Consultant Pro', avatarUrl: 'https://i.pravatar.cc/150?u=user-2', role: 'consultor', companyId: 'comp-1', companyName: 'Global Exports Inc.', emailPreferences: { taskAssigned: true, taskDue: false, commentMention: true, dailySummary: true } },
-    { uid: 'user-3', email: 'client.one@gei.com', displayName: 'Client One', avatarUrl: 'https://i.pravatar.cc/150?u=user-3', role: 'cliente', companyId: 'comp-1', companyName: 'Global Exports Inc.', emailPreferences: { taskAssigned: true, taskDue: true, commentMention: false, dailySummary: false } },
-    { uid: 'user-4', email: 'client.two@acme.com', displayName: 'Client Two', avatarUrl: 'https://i.pravatar.cc/150?u=user-4', role: 'cliente', companyId: 'comp-2', companyName: 'Acme Imports LLC', emailPreferences: { taskAssigned: true, taskDue: true, commentMention: true, dailySummary: false } },
+const mockUsers: UserProfile[] = [
+    { uid: 'user-1', email: 'admin@compliance.pro', displayName: 'Admin User', role: 'admin', companyId: 'comp-1', emailPreferences: { taskAssigned: true, taskDue: true } },
+    { uid: 'user-2', email: 'consultor@compliance.pro', displayName: 'Consultor User', role: 'consultor', companyId: 'comp-1', emailPreferences: { taskAssigned: true, taskDue: false } },
+    { uid: 'user-3', email: 'cliente@compliance.pro', displayName: 'Client User', role: 'cliente', companyId: 'comp-1', emailPreferences: { taskAssigned: false, taskDue: true } },
 ];
 
-const MOCK_COMPANIES: Company[] = [
-    { 
-        id: 'comp-1', 
-        name: 'Global Exports Inc.',
+const mockCompanies: Company[] = [
+    {
+        id: 'comp-1',
+        name: 'TechSolutions S.A. de C.V.',
         general: {
-            datosFiscales: { razonSocial: 'Global Exports Inc. S.A. de C.V.', rfc: 'GEI980321XYZ', telefono: '55-1234-5678', domicilioFiscal: 'Av. Insurgentes Sur 123, Piso 10, CDMX' },
-            actaConstitutiva: { numeroEscritura: '54321', fecha: '1998-03-21', nombreFedatario: 'Lic. Juan Pérez' },
-            representanteLegal: { numeroEscrituraPoder: '98765', fechaPoder: '2015-01-10', nombreFedatario: 'Lic. Ana Rodriguez' }
+            datosFiscales: { razonSocial: 'TechSolutions S.A. de C.V.', rfc: 'TSO123456XYZ', domicilioFiscal: 'Av. Innovación 123, Parque Tecnológico, Querétaro, Qro.', telefono: '442-555-0101' },
+            actaConstitutiva: { numeroEscritura: '54321', fecha: '2010-05-20', notarioPublico: 'Lic. Juan Pérez' },
+            representanteLegal: { nombre: 'Ana García', rfc: 'GAAA800101ABC' }
         },
         programas: {
-            immex: { numeroRegistro: 'IMX-001', modalidad: 'Industrial', fechaAutorizacion: '2010-05-20' },
-            prosec: { numeroRegistro: 'PRO-001', sector: 'Automotriz', fechaAutorizacion: '2011-06-15' }
+            immex: { numeroRegistro: 'IMX-9876', modalidad: 'Industrial', fechaAutorizacion: '2011-01-15' },
+            prosec: { numeroRegistro: 'PRO-5432', sector: 'Electrónico', fechaAutorizacion: '2011-02-01' }
         },
-        miembros: [{ id: 'm-1', nombre: 'John Doe', rfc: 'DOEJ800101ABC', tipoPersona: 'Física', caracter: 'Socio', nacionalidad: 'Estadounidense', tributaEnMexico: true }],
-        domicilios: [{ id: 'd-1', direccionCompleta: 'Parque Industrial Toluca 2000, Toluca, Edo. Méx.', telefono: '722-987-6543', programaVinculado: 'IMMEX' }],
-        agentesAduanales: [{ id: 'a-1', nombre: 'Agencia Aduanal A', numeroPatente: '3001', estadoEncargo: 'Activo' }],
+        miembros: [{ id: 'm-1', nombre: 'Carlos Sánchez', rfc: 'SACJ750315DEF' }],
+        domicilios: [{ id: 'd-1', direccionCompleta: 'Planta 1, Av. Industrial 456, Querétaro', telefono: '442-555-0102' }],
+        agentesAduanales: [{ id: 'aa-1', nombre: 'Agencia Aduanal Rápida', numeroPatente: '3001', estadoEncargo: 'Activo' }],
         documents: [
-            { id: uuidv4(), name: 'ActaConstitutiva.pdf', url: '#', type: 'application/pdf', size: 2097152, uploadDate: new Date(Date.now() - 86400000 * 10).toISOString(), category: 'Legal' },
-            { id: uuidv4(), name: 'Autorizacion_IMMEX.pdf', url: '#', type: 'application/pdf', size: 1048576, uploadDate: new Date(Date.now() - 86400000 * 5).toISOString(), category: 'IMMEX' },
-        ],
-    },
-    { 
-        id: 'comp-2', 
-        name: 'Acme Imports LLC',
-        general: {
-            datosFiscales: { razonSocial: 'Acme Imports LLC', rfc: 'AIL121212ABC', telefono: '81-8765-4321', domicilioFiscal: 'Av. Lázaro Cárdenas 456, Monterrey, N.L.' },
-            actaConstitutiva: { numeroEscritura: '11223', fecha: '2012-12-12', nombreFedatario: 'Lic. Carlos Sanchez' },
-            representanteLegal: { numeroEscrituraPoder: '33445', fechaPoder: '2018-02-20', nombreFedatario: 'Lic. Sofia Garza' }
-        },
-        programas: {
-            immex: { numeroRegistro: 'IMX-002', modalidad: 'Servicios', fechaAutorizacion: '2013-01-15' }
-        },
-        miembros: [],
-        domicilios: [],
-        agentesAduanales: [],
-        documents: [],
+            { id: 'doc-1', name: 'Acta_Constitutiva.pdf', url: '#', type: 'application/pdf', size: 1200000, uploadDate: '2023-01-10', category: 'Legal' },
+            { id: 'doc-2', name: 'IMMEX_Autorizacion.pdf', url: '#', type: 'application/pdf', size: 850000, uploadDate: '2023-02-15', category: 'IMMEX' },
+        ]
     }
 ];
 
-const MOCK_TASK_CATEGORIES: TaskCategory[] = [
-    { id: 'cat-1', name: 'Fiscal', color: 'bg-blue-500' },
-    { id: 'cat-2', name: 'Aduanero', color: 'bg-green-500' },
-    { id: 'cat-3', name: 'Legal Corporativo', color: 'bg-purple-500' },
-    { id: 'cat-4', name: 'Certificaciones', color: 'bg-yellow-500' },
+const mockTaskCategories: TaskCategory[] = [
+    { id: 'cat-1', name: 'Fiscal', companyId: 'comp-1' },
+    { id: 'cat-2', name: 'Aduanero', companyId: 'comp-1' },
+    { id: 'cat-3', name: 'Corporativo', companyId: 'comp-1' },
+    { id: 'cat-4', name: 'Laboral', companyId: 'comp-1' },
+]
+
+const mockEvents: CalendarEvent[] = [
+    { id: 'evt-1', companyId: 'comp-1', title: 'Declaración Anual', description: 'Presentar declaración anual de impuestos.', dueDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString().split('T')[0], status: 'pending', priority: 'high', category: 'cat-1', reminders: [] },
+    { id: 'evt-2', companyId: 'comp-1', title: 'Pago de IVA', description: 'Realizar pago mensual de IVA.', dueDate: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString().split('T')[0], status: 'overdue', priority: 'high', category: 'cat-1', reminders: [] },
+    { id: 'evt-3', companyId: 'comp-1', title: 'Revisión de Contratos', description: 'Revisar contratos con proveedores.', dueDate: new Date(new Date().setDate(new Date().getDate() + 25)).toISOString().split('T')[0], status: 'pending', priority: 'medium', category: 'cat-3', reminders: [] },
+    { id: 'evt-4', companyId: 'comp-1', title: 'Auditoría Interna', description: 'Completar auditoría de procesos aduaneros.', dueDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0], status: 'completed', priority: 'medium', category: 'cat-2', reminders: [] },
 ];
 
-const getInitialDate = (offsetDays: number) => new Date(new Date().setDate(new Date().getDate() + offsetDays)).toISOString().split('T')[0];
-
-let MOCK_EVENTS: CalendarEvent[] = [
-    { id: uuidv4(), companyId: 'comp-1', title: 'Declaración mensual de IVA', dueDate: getInitialDate(2), description: 'Presentar la declaración de IVA correspondiente al mes anterior.', category: 'cat-1', priority: 'high', status: 'pending', assigneeId: 'user-3', reminders: [], attachments: [] },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Renovación de Certificación OEA', dueDate: getInitialDate(15), description: 'Iniciar el proceso de renovación de la certificación de Operador Económico Autorizado.', category: 'cat-4', priority: 'medium', status: 'pending', assigneeId: 'user-1', reminders: [{id: 'rem-1', time: '1d'}], attachments: [] },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Auditoría interna de Anexo 24', dueDate: getInitialDate(-5), description: 'Revisar registros y saldos del sistema de control de inventarios.', category: 'cat-2', priority: 'high', status: 'overdue', assigneeId: 'user-2', reminders: [], attachments: [] },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Pago de impuestos de importación', dueDate: getInitialDate(-1), description: 'Realizar el pago correspondiente a la última importación.', category: 'cat-1', priority: 'medium', status: 'completed', assigneeId: 'user-3', reminders: [], attachments: [] },
-    { id: uuidv4(), companyId: 'comp-2', title: 'Presentar DIOT', dueDate: getInitialDate(5), description: 'Declaración Informativa de Operaciones con Terceros.', category: 'cat-1', priority: 'medium', status: 'pending', assigneeId: 'user-4', reminders: [], attachments: [] },
+const mockObligations: Obligation[] = [
+    { id: 'ob-1', companyId: 'comp-1', title: 'Reporte Mensual IMMEX', description: 'Generar y presentar el reporte de operaciones IMMEX.', category: 'cat-2', frequency: 'monthly', status: 'active' },
+    { id: 'ob-2', companyId: 'comp-1', title: 'Declaración Trimestral ISR', description: 'Presentar pagos provisionales de ISR.', category: 'cat-1', frequency: 'quarterly', status: 'active' },
 ];
 
-let MOCK_OBLIGATIONS: Obligation[] = [
-    { id: uuidv4(), companyId: 'comp-1', title: 'Declaración Mensual IVA', description: 'Presentar la declaración mensual de IVA.', category: 'cat-1', frequency: 'monthly', dayOfMonth: '17', status: 'active', assigneeId: 'user-3' },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Reporte Anual IMMEX', description: 'Presentar el reporte anual de operaciones de comercio exterior.', category: 'cat-2', frequency: 'yearly', month: '5', dayOfMonth: 'last', status: 'active', assigneeId: 'user-2' },
+const mockNotifications: Notification[] = [
+  { id: 'notif-1', type: 'TASK_OVERDUE', message: 'Task "Pago de IVA" is overdue.', timestamp: new Date(Date.now() - 3 * 86400000).toISOString(), isRead: false },
+  { id: 'notif-2', type: 'TASK_DUE', message: 'Task "Declaración Anual" is due in 10 days.', timestamp: new Date(Date.now() - 86400000).toISOString(), isRead: false },
+  { id: 'notif-3', type: 'TASK_ASSIGNED', message: 'You have been assigned the task "Revisión de Contratos".', timestamp: new Date(Date.now() - 2 * 86400000).toISOString(), isRead: true },
 ];
 
-let MOCK_NOTIFICATIONS: Notification[] = [
-    { id: uuidv4(), type: 'TASK_OVERDUE', message: 'Task "Auditoría interna de Anexo 24" is overdue.', timestamp: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString(), isRead: false, relatedId: 'some-id' },
-    { id: uuidv4(), type: 'TASK_ASSIGNED', message: 'You have been assigned a new task: "Declaración mensual de IVA"', timestamp: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), isRead: false, relatedId: 'some-id' },
-    { id: uuidv4(), type: 'TASK_DUE', message: 'Task "Pago de impuestos de importación" is due today.', timestamp: new Date().toISOString(), isRead: true, relatedId: 'some-id' },
+const mockComplianceDocs: ComplianceDocument[] = [
+  { id: 'cdoc-1', title: 'Ley Aduanera', description: 'Ley que regula la entrada y salida de mercancías del territorio nacional.', category: 'Ley', publicationDate: '2023-12-15', fileName: 'ley_aduanera_2023.pdf', fileUrl: '#', fileType: 'application/pdf', fileSize: 2500000, uploadDate: '2024-01-01', aiSummary: '• Regulates customs operations.\n• Establishes tariffs and customs regimes.\n• Defines infractions and sanctions.' },
+  { id: 'cdoc-2', title: 'Reglamento de la Ley Aduanera', description: 'Disposiciones aplicables a la Ley Aduanera.', category: 'Reglamento', publicationDate: '2024-01-20', fileName: 'reglamento_la_2024.pdf', fileUrl: '#', fileType: 'application/pdf', fileSize: 1800000, uploadDate: '2024-02-01', aiSummary: '• Details procedures for customs clearance.\n• Specifies documentation requirements.\n• Expands on temporary importation rules.' },
 ];
 
-// --- MOCK AUTH ---
+// Mock API Functions
 
-let currentUser: UserProfile | null = null;
-let authStateListener: ((user: { uid: string } | null) => void) | null = null;
+export const getMockLoginUsers = (): UserProfile[] => mockUsers;
 
-export const mockSignIn = (email: string, pass: string): Promise<{ uid: string }> => {
-    console.log(`Attempting to sign in with ${email}`);
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const user = MOCK_USERS.find(u => u.email === email);
-            if (user) {
-                currentUser = user;
-                if (authStateListener) authStateListener({ uid: user.uid });
-                resolve({ uid: user.uid });
-            } else {
-                reject(new Error('User not found'));
-            }
-        }, 500);
-    });
-};
+export const getMockUserByEmail = (email: string): UserProfile | undefined => mockUsers.find(u => u.email === email);
 
-export const mockSignOut = (): Promise<void> => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            currentUser = null;
-            if (authStateListener) authStateListener(null);
-            resolve();
-        }, 200);
-    });
-};
+export const getMockCompany = (companyId: string): Company | undefined => mockCompanies.find(c => c.id === companyId);
 
-export const onAuthStateChanged = (callback: (user: { uid: string } | null) => void): (() => void) => {
-    authStateListener = callback;
-    // Simulate initial state check
-    setTimeout(() => {
-        if (currentUser) {
-            callback({ uid: currentUser.uid });
-        } else {
-            callback(null);
-        }
-    }, 100);
-    return () => { authStateListener = null; };
-};
+export const getMockCompanyUsers = (companyId: string): UserProfile[] => mockUsers.filter(u => u.companyId === companyId);
 
+export const getMockEvents = (companyId: string): CalendarEvent[] => mockEvents.filter(e => e.companyId === companyId);
 
-// --- MOCK API ---
+export const getMockTaskCategories = (companyId: string): TaskCategory[] => mockTaskCategories.filter(c => c.companyId === companyId);
 
-const apiLatency = () => Math.random() * 400 + 100; // 100-500ms delay
+export const getMockObligations = (companyId: string): Obligation[] => mockObligations.filter(o => o.companyId === companyId);
 
-export const mockGetUserProfile = (uid: string): Promise<UserProfile> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const user = MOCK_USERS.find(u => u.uid === uid);
-            if (user) resolve(JSON.parse(JSON.stringify(user)));
-            else reject(new Error('User profile not found'));
-        }, apiLatency());
-    });
-};
+export const getMockNotifications = (): Notification[] => mockNotifications;
 
-export const mockUpdateUserProfile = (uid: string, data: Partial<UserProfile>): Promise<UserProfile> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const userIndex = MOCK_USERS.findIndex(u => u.uid === uid);
-            if (userIndex > -1) {
-                MOCK_USERS[userIndex] = { ...MOCK_USERS[userIndex], ...data };
-                if (currentUser?.uid === uid) {
-                    currentUser = MOCK_USERS[userIndex];
-                }
-                resolve(JSON.parse(JSON.stringify(MOCK_USERS[userIndex])));
-            } else {
-                reject(new Error('User not found'));
-            }
-        }, apiLatency());
-    });
-};
-
-export const getAllUsers = (): Promise<UserProfile[]> => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve(JSON.parse(JSON.stringify(MOCK_USERS)));
-        }, apiLatency());
-    });
-};
-
-export const getCompanyData = (companyId: string): Promise<{ company: Company; users: UserProfile[]; events: CalendarEvent[]; obligations: Obligation[]; categories: TaskCategory[]; notifications: Notification[] }> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const company = MOCK_COMPANIES.find(c => c.id === companyId);
-            if (!company) return reject(new Error('Company not found'));
-
-            const users = MOCK_USERS.filter(u => u.companyId === companyId);
-            const events = MOCK_EVENTS.filter(e => e.companyId === companyId);
-            const obligations = MOCK_OBLIGATIONS.filter(o => o.companyId === companyId);
-
-            resolve({
-                company: JSON.parse(JSON.stringify(company)),
-                users: JSON.parse(JSON.stringify(users)),
-                events: JSON.parse(JSON.stringify(events)),
-                obligations: JSON.parse(JSON.stringify(obligations)),
-                categories: JSON.parse(JSON.stringify(MOCK_TASK_CATEGORIES)),
-                notifications: JSON.parse(JSON.stringify(MOCK_NOTIFICATIONS)),
-            });
-        }, apiLatency());
-    });
-};
-
-export const updateCompanyData = (company: Company): Promise<Company> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const index = MOCK_COMPANIES.findIndex(c => c.id === company.id);
-            if (index > -1) {
-                MOCK_COMPANIES[index] = company;
-                resolve(JSON.parse(JSON.stringify(company)));
-            } else {
-                reject(new Error("Company not found for update"));
-            }
-        }, apiLatency());
-    });
-};
-
-export const addCalendarEvent = (companyId: string, eventData: Omit<CalendarEvent, 'id' | 'companyId'>): Promise<CalendarEvent> => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const newEvent: CalendarEvent = { ...eventData, id: uuidv4(), companyId, attachments: eventData.attachments || [] };
-            MOCK_EVENTS.push(newEvent);
-            resolve(JSON.parse(JSON.stringify(newEvent)));
-        }, apiLatency());
-    });
-};
-
-export const updateCalendarEvent = (updatedEvent: CalendarEvent): Promise<CalendarEvent> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const index = MOCK_EVENTS.findIndex(e => e.id === updatedEvent.id);
-            if (index > -1) {
-                MOCK_EVENTS[index] = updatedEvent;
-                resolve(JSON.parse(JSON.stringify(updatedEvent)));
-            } else {
-                reject(new Error("Event not found for update"));
-            }
-        }, apiLatency());
-    });
-};
-
-export const mockDeleteCalendarEvent = (eventId: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const initialLength = MOCK_EVENTS.length;
-            MOCK_EVENTS = MOCK_EVENTS.filter(e => e.id !== eventId);
-            if (MOCK_EVENTS.length < initialLength) {
-                resolve();
-            } else {
-                reject(new Error("Event not found for deletion"));
-            }
-        }, apiLatency());
-    });
-};
-
-
-export const addObligationData = (companyId: string, obligationData: Omit<Obligation, 'id' | 'companyId' | 'status'>): Promise<Obligation> => {
-     return new Promise(resolve => {
-        setTimeout(() => {
-            const newObligation: Obligation = { ...obligationData, id: uuidv4(), companyId, status: 'active' };
-            MOCK_OBLIGATIONS.push(newObligation);
-            resolve(JSON.parse(JSON.stringify(newObligation)));
-        }, apiLatency());
-    });
-};
-
-export const mockDeleteObligation = (obligationId: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const initialLength = MOCK_OBLIGATIONS.length;
-            MOCK_OBLIGATIONS = MOCK_OBLIGATIONS.filter(o => o.id !== obligationId);
-            if (MOCK_OBLIGATIONS.length < initialLength) {
-                resolve();
-            } else {
-                reject(new Error("Obligation not found for deletion"));
-            }
-        }, apiLatency());
-    });
-};
+export const getMockComplianceDocs = (): ComplianceDocument[] => mockComplianceDocs;

@@ -35,20 +35,20 @@ const AIAssistantDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         setIsLoading(true);
 
         try {
-            const aiResponseText = await getAIAssistantResponse(input);
+            // FIX: The getAIAssistantResponse function returns either a string or a parsed AITaskSuggestion object.
+            // We need to check the type of the response instead of trying to parse it again.
+            const aiResponse = await getAIAssistantResponse(input);
             let aiMessage: Message;
-            try {
-                // Check if the response is a JSON suggestion
-                const parsedJson = JSON.parse(aiResponseText) as AITaskSuggestion;
-                if (parsedJson.isTaskSuggestion && parsedJson.task) {
-                    aiMessage = { sender: 'ai', suggestion: parsedJson };
-                } else {
-                     aiMessage = { sender: 'ai', text: aiResponseText };
-                }
-            } catch (e) {
-                // Not a JSON object, so it's a regular text response
-                aiMessage = { sender: 'ai', text: aiResponseText };
+            
+            if (typeof aiResponse === 'string') {
+                aiMessage = { sender: 'ai', text: aiResponse };
+            } else if (aiResponse && aiResponse.isTaskSuggestion) {
+                aiMessage = { sender: 'ai', suggestion: aiResponse };
+            } else {
+                // Fallback for an unexpected response format
+                aiMessage = { sender: 'ai', text: "Sorry, I received an unexpected response." };
             }
+
             setMessages(prev => [...prev, aiMessage]);
         } catch (error) {
             const errorMessage: Message = { sender: 'ai', text: error instanceof Error ? error.message : "An unknown error occurred." };
