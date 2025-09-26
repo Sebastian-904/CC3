@@ -9,6 +9,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import type { Obligation } from '../lib/types';
 import ConfirmationDialog from '../components/ui/ConfirmationDialog';
 import { useToast } from '../hooks/useToast';
+import { useAuth } from '../hooks/useAuth';
 
 const getDueDateRuleText = (obligation: Obligation) => {
     try {
@@ -32,12 +33,15 @@ const getDueDateRuleText = (obligation: Obligation) => {
 
 const ObligationsPage = () => {
     const { obligations, loading, activeCompany, deleteObligation } = useApp();
+    const { user: currentUser } = useAuth();
     const { t } = useLanguage();
     const { toast } = useToast();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [obligationToDelete, setObligationToDelete] = useState<Obligation | null>(null);
+    
+    const canManage = currentUser?.role === 'admin' || currentUser?.role === 'consultor';
 
     if (loading && !activeCompany) {
         return <div className="flex h-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -63,7 +67,7 @@ const ObligationsPage = () => {
     };
 
     const handleDeleteConfirm = async () => {
-        if (!obligationToDelete) return;
+        if (!obligationToDelete || !canManage) return;
         setIsDeleting(true);
         try {
             await deleteObligation(obligationToDelete.id);
@@ -92,10 +96,12 @@ const ObligationsPage = () => {
                     <h1 className="text-2xl font-bold flex items-center gap-2"><FileText className="h-6 w-6" /> {t('obligationsMatrix')}</h1>
                     <p className="text-muted-foreground">{t('trackObligations')}</p>
                 </div>
-                <Button onClick={() => setIsDialogOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    New Obligation
-                </Button>
+                {canManage && (
+                    <Button onClick={() => setIsDialogOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        New Obligation
+                    </Button>
+                )}
             </div>
 
             <Card>
@@ -113,7 +119,7 @@ const ObligationsPage = () => {
                                     <th className="hidden sm:table-cell p-3 font-medium text-left">Frequency</th>
                                     <th className="hidden lg:table-cell p-3 font-medium text-left">Due Date / Rule</th>
                                     <th className="p-3 font-medium text-left">Status</th>
-                                    <th className="p-3 font-medium text-right">Actions</th>
+                                    {canManage && <th className="p-3 font-medium text-right">Actions</th>}
                                 </tr>
                             </thead>
                             <tbody>
@@ -124,15 +130,17 @@ const ObligationsPage = () => {
                                         <td className="hidden sm:table-cell p-3">{ob.frequency}</td>
                                         <td className="hidden lg:table-cell p-3">{getDueDateRuleText(ob)}</td>
                                         <td className="p-3"><Badge variant={ob.status === 'active' ? 'completed' : 'secondary'}>{ob.status}</Badge></td>
-                                        <td className="p-3 text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(ob)} title="Delete Obligation">
-                                                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                                            </Button>
-                                        </td>
+                                        {canManage && (
+                                            <td className="p-3 text-right">
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(ob)} title="Delete Obligation">
+                                                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                                </Button>
+                                            </td>
+                                        )}
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan={6} className="p-6 text-center text-muted-foreground">No obligations found for this company.</td>
+                                        <td colSpan={canManage ? 6 : 5} className="p-6 text-center text-muted-foreground">No obligations found for this company.</td>
                                     </tr>
                                 )}
                             </tbody>

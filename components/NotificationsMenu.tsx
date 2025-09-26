@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { Bell, CalendarClock, MessageSquare, AlertTriangle, UserCheck, BellRing } from 'lucide-react';
 import { useApp } from '../hooks/useApp';
 import Button from './ui/Button';
@@ -31,7 +31,11 @@ const NotificationsMenu = () => {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    useOnClickOutside(menuRef, () => setIsOpen(false));
+    const closeMenu = useCallback(() => {
+        setIsOpen(false);
+    }, []);
+
+    useOnClickOutside(menuRef, closeMenu);
     
     const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 

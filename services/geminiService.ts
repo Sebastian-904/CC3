@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { AIExtractedCompany } from "../lib/types";
+import { AIExtractedCompany, Company } from "../lib/types";
 
 // Ensure the API key is available in the environment variables
 if (!process.env.API_KEY) {
@@ -37,6 +38,63 @@ export const getAIAssistantResponse = async (prompt: string, customSystemInstruc
             return `Sorry, I encountered an error: ${error.message}`;
         }
         return "Sorry, I encountered an unknown error while processing your request.";
+    }
+};
+
+export const getComplianceNews = async (companyProfile: { sector?: string, programs?: string[] }): Promise<{ summary: string; sources: { uri: string; title: string }[] }> => {
+    if (!process.env.API_KEY) {
+        throw new Error("AI Assistant is not configured. Missing API Key.");
+    }
+
+    // Construct a dynamic prompt
+    let prompt = "What are the latest tax and customs compliance news and regulation updates in Mexico?";
+    const relevantInfo = [];
+    if (companyProfile.sector) {
+        relevantInfo.push(`a company in the ${companyProfile.sector} sector`);
+    }
+    if (companyProfile.programs && companyProfile.programs.length > 0) {
+        relevantInfo.push(`with ${companyProfile.programs.join(' and ')} programs`);
+    }
+    if (relevantInfo.length > 0) {
+        prompt += ` This is relevant for ${relevantInfo.join(' ')}.`;
+    }
+    prompt += " Summarize the key points and potential impacts in a list format.";
+
+    try {
+        const response = await ai.models.generateContent({
+            model: model,
+            contents: prompt,
+            config: {
+                tools: [{ googleSearch: {} }],
+            },
+        });
+
+        const summary = response.text.trim();
+        const rawChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+        
+        // FIX: The API may return `unknown`, so we ensure it's an array before reducing.
+        const sources = Array.isArray(rawChunks) ? (rawChunks as any[]).reduce(
+            (acc: { uri: string; title: string }[], chunk: any) => {
+                const web = chunk?.web;
+                if (web && web.uri && web.title) {
+                    acc.push({ uri: web.uri, title: web.title });
+                }
+                return acc;
+            },
+            [] as { uri: string; title: string }[]
+        ) : [];
+        
+        // Deduplicate sources
+        const uniqueSources = Array.from(new Map(sources.map(s => [s.uri, s])).values());
+
+        return { summary, sources: uniqueSources };
+
+    } catch (error) {
+        console.error("Error calling Gemini API for news grounding:", error);
+        if (error instanceof Error) {
+            throw new Error(`AI news search failed: ${error.message}`);
+        }
+        throw new Error("An unknown error occurred during AI news search.");
     }
 };
 

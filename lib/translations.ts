@@ -1,3 +1,7 @@
+
+// ---
+// title: lib/translations.ts
+// ---
 export const translations = {
   en: {
     dashboard: 'Dashboard',
@@ -53,6 +57,20 @@ export const translations = {
     aiAssistantTaskAdded: 'Great! I\'ve added "{taskTitle}" to your calendar.',
     aiAssistantPlaceholder: 'e.g., \'Remind me to file the quarterly report by next Friday...\'',
     addToCalendar: 'Add to Calendar',
+    complianceNewsFeed: 'Compliance News Feed',
+    complianceNewsFeedDesc: 'AI-powered updates on relevant regulations.',
+    refresh: 'Refresh',
+    searchingUpdates: 'Searching for compliance updates...',
+    fetchNewsError: 'Failed to fetch news',
+    promptForNews: 'Click "Refresh" to get the latest compliance news.',
+    sources: 'Sources',
+    createTaskFromUpdate: 'Create Task from this update',
+    reviewComplianceUpdate: 'Review Compliance Update',
+    documents: 'Documents',
+    uploadDocument: 'Upload Document',
+    documentCategory: 'Category',
+    uploadDate: 'Upload Date',
+    fileSize: 'File Size',
   },
   es: {
     dashboard: 'Tablero',
@@ -108,5 +126,19 @@ export const translations = {
     aiAssistantTaskAdded: '¡Genial! He añadido "{taskTitle}" a tu calendario.',
     aiAssistantPlaceholder: 'ej., \'Recuérdame presentar el informe trimestral para el próximo viernes...\'',
     addToCalendar: 'Añadir al Calendario',
+    complianceNewsFeed: 'Noticias de Cumplimiento',
+    complianceNewsFeedDesc: 'Actualizaciones con IA sobre regulaciones relevantes.',
+    refresh: 'Actualizar',
+    searchingUpdates: 'Buscando actualizaciones de cumplimiento...',
+    fetchNewsError: 'Error al buscar noticias',
+    promptForNews: 'Haz clic en "Actualizar" para obtener las últimas noticias.',
+    sources: 'Fuentes',
+    createTaskFromUpdate: 'Crear Tarea desde esta actualización',
+    reviewComplianceUpdate: 'Revisar Actualización de Cumplimiento',
+    documents: 'Documentos',
+    uploadDocument: 'Subir Documento',
+    documentCategory: 'Categoría',
+    uploadDate: 'Fecha de Carga',
+    fileSize: 'Tamaño',
   },
 };

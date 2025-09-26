@@ -4,6 +4,7 @@ import { cn } from '../lib/utils';
 import { GanttChartSquare, LayoutDashboard, Building, FileText, BarChart2, Users, Settings, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useLanguage } from '../hooks/useLanguage';
+import { useAuth } from '../hooks/useAuth';
 
 interface AppSidebarProps {
     isOpen: boolean;
@@ -13,14 +14,17 @@ interface AppSidebarProps {
 const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, setIsOpen }) => {
     const { theme, setTheme } = useTheme();
     const { language, setLanguage, t } = useLanguage();
+    const { user } = useAuth();
+    
+    const canManageUsers = user?.role === 'admin' || user?.role === 'consultor';
 
     const navItems = [
-        { to: '/dashboard', icon: LayoutDashboard, label: t('dashboard') },
-        { to: '/company-profile', icon: Building, label: t('companyProfile') },
-        { to: '/obligations', icon: FileText, label: t('obligationsMatrix') },
-        { to: '/reports', icon: BarChart2, label: t('reports') },
-        { to: '/users', icon: Users, label: t('users') },
-        { to: '/settings', icon: Settings, label: t('settings') },
+        { to: '/dashboard', icon: LayoutDashboard, label: t('dashboard'), visible: true },
+        { to: '/company-profile', icon: Building, label: t('companyProfile'), visible: true },
+        { to: '/obligations', icon: FileText, label: t('obligationsMatrix'), visible: true },
+        { to: '/reports', icon: BarChart2, label: t('reports'), visible: true },
+        { to: '/users', icon: Users, label: t('users'), visible: canManageUsers },
+        { to: '/settings', icon: Settings, label: t('settings'), visible: true },
     ];
 
     return (
@@ -36,7 +40,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, setIsOpen }) => {
                 </a>
             </div>
             <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 text-sm font-medium lg:px-4 py-4 space-y-1">
-                {navItems.map((item) => (
+                {navItems.filter(item => item.visible).map((item) => (
                     <NavLink
                         key={item.to}
                         to={item.to}

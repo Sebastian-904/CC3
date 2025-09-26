@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
-import { GanttChartSquare, Loader2 } from 'lucide-react';
+import { GanttChartSquare, Loader2, User as UserIcon } from 'lucide-react';
 import { MOCK_USERS } from '../services/firebaseService';
 import { UserProfile } from '../lib/types';
 
@@ -40,8 +40,8 @@ const LoginPage = () => {
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <div className="mx-auto mb-4 flex items-center justify-center">
-                       <GanttChartSquare className="h-8 w-8 text-primary" />
-                       <span className="ml-2 text-2xl font-bold">CompliancePro</span>
+                       <GanttChartSquare className="h-10 w-10 text-primary" />
+                       <span className="ml-3 text-3xl font-bold">CompliancePro</span>
                     </div>
                     <CardTitle className="text-2xl">Select a Profile</CardTitle>
                     <CardDescription>Click a profile to get instant access.</CardDescription>
@@ -61,11 +61,9 @@ const LoginPage = () => {
                             onClick={() => handleLogin(user)}
                             className="w-full text-left p-3 rounded-lg border flex items-center gap-4 hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         >
-                            <img
-                                src={user.avatarUrl}
-                                alt={user.displayName}
-                                className="h-12 w-12 rounded-full"
-                            />
+                            <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                                <UserIcon className="h-6 w-6 text-secondary-foreground" />
+                            </div>
                             <div className="flex-1">
                                 <p className="font-semibold">{user.displayName}</p>
                                 <p className="text-sm text-muted-foreground">{user.email}</p>

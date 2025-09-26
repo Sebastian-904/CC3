@@ -16,6 +16,7 @@ interface TaskEditDialogProps {
   onClose: () => void;
   event?: CalendarEvent;
   initialDate?: string; // YYYY-MM-DD for new tasks
+  initialData?: Partial<Omit<CalendarEvent, 'id' | 'companyId'>>;
 }
 
 interface AISuggestion {
@@ -33,7 +34,7 @@ const getReminderLabel = (time: ReminderTime) => {
     return reminderOptions.find(opt => opt.value === time)?.label || time;
 }
 
-const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event, initialDate }) => {
+const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event, initialDate, initialData }) => {
   const { addEvent, updateEvent, taskCategories, companyUsers } = useApp();
   const [formData, setFormData] = useState({
     title: '',
@@ -64,22 +65,22 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event,
                 reminders: event.reminders || [],
             });
         } else {
-            setFormData({
-                title: '',
-                dueDate: initialDate || new Date().toISOString().split('T')[0],
-                description: '',
-                category: taskCategories[0]?.id || '',
-                priority: 'medium',
-                status: 'pending',
-                assigneeId: '',
-                reminders: [],
+             setFormData({
+                title: initialData?.title || '',
+                dueDate: initialData?.dueDate || initialDate || new Date().toISOString().split('T')[0],
+                description: initialData?.description || '',
+                category: initialData?.category || taskCategories[0]?.id || '',
+                priority: initialData?.priority || 'medium',
+                status: initialData?.status || 'pending',
+                assigneeId: initialData?.assigneeId || '',
+                reminders: initialData?.reminders || [],
             });
         }
         // Reset suggestion state on open
         setAiSuggestion(null);
         setIsSuggesting(false);
     }
-  }, [event, isOpen, initialDate, taskCategories]);
+  }, [event, isOpen, initialDate, initialData, taskCategories]);
 
   const handleGetSuggestion = useCallback(async () => {
     if (!companyUsers || companyUsers.length === 0 || (!formData.title && !formData.description)) return;

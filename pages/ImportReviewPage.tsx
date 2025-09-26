@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp';
 import { AIExtractedCompany, Company } from '../lib/types';
 import Button from '../components/ui/Button';
-import { Loader2, FileCheck, AlertTriangle, Sparkles, Info } from 'lucide-react';
+import { Loader2, FileCheck, AlertTriangle, Sparkles, Info, Trash2, PlusCircle } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
 import { Label } from '../components/ui/Label';
 import Input from '../components/ui/Input';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/Popover';
 import set from 'lodash.set';
+import { v4 as uuidv4 } from 'uuid';
 
 const ImportReviewPage: React.FC = () => {
     const { importedCompanyData, setImportedCompanyData, activeCompany, updateCompany } = useApp();
@@ -41,6 +42,7 @@ const ImportReviewPage: React.FC = () => {
     };
 
     const handleSave = async () => {
+        if (!reviewData) return;
         setIsSaving(true);
         try {
             // Convert AIExtractedCompany to Company by stripping metadata
@@ -77,10 +79,27 @@ const ImportReviewPage: React.FC = () => {
                         fechaAutorizacion: reviewData.programas.prosec.fechaAutorizacion.value,
                     } : undefined,
                 },
-                 // For now, we are not handling lists in this simplified example
-                miembros: activeCompany.miembros,
-                domicilios: activeCompany.domicilios,
-                agentesAduanales: activeCompany.agentesAduanales,
+                miembros: reviewData.miembros?.map(m => ({
+                    id: uuidv4(),
+                    nombre: m.nombre.value,
+                    rfc: m.rfc.value,
+                    tipoPersona: 'Física', // Default value
+                    caracter: 'Socio', // Default value
+                    nacionalidad: 'Mexicana', // Default value
+                    tributaEnMexico: true, // Default value
+                })) || activeCompany.miembros,
+                domicilios: reviewData.domicilios?.map(d => ({
+                    id: uuidv4(),
+                    direccionCompleta: d.direccionCompleta.value,
+                    telefono: d.telefono.value,
+                    programaVinculado: '', // Default value
+                })) || activeCompany.domicilios,
+                agentesAduanales: reviewData.agentesAduanales?.map(a => ({
+                    id: uuidv4(),
+                    nombre: a.nombre.value,
+                    numeroPatente: a.numeroPatente.value,
+                    estadoEncargo: 'Activo', // Default value
+                })) || activeCompany.agentesAduanales,
             };
             
             await updateCompany(finalCompanyData);
@@ -107,16 +126,46 @@ const ImportReviewPage: React.FC = () => {
     
     const handleFieldChange = (path: string, value: string) => {
         const updatedData = JSON.parse(JSON.stringify(reviewData));
-        set(updatedData, `${path}.value`, value);
+        set(updatedData, path, value);
         setReviewData(updatedData);
     };
+
+    const createNewItem = (type: 'miembros' | 'domicilios' | 'agentesAduanales') => {
+        const withAIExtra = (value = '') => ({ value, confidence: 1.0, source: 'Manually Added' });
+        switch(type) {
+            case 'miembros': return { nombre: withAIExtra(), rfc: withAIExtra() };
+            case 'domicilios': return { direccionCompleta: withAIExtra(), telefono: withAIExtra() };
+            case 'agentesAduanales': return { nombre: withAIExtra(), numeroPatente: withAIExtra() };
+        }
+    };
+    
+    const handleAddItem = (type: 'miembros' | 'domicilios' | 'agentesAduanales') => {
+        if (!reviewData) return;
+        const newItem = createNewItem(type);
+        const updatedData = { ...reviewData };
+        if (!updatedData[type]) {
+            (updatedData as any)[type] = [];
+        }
+        (updatedData[type] as any[]).push(newItem);
+        setReviewData(updatedData);
+    };
+
+    const handleRemoveItem = (type: 'miembros' | 'domicilios' | 'agentesAduanales', index: number) => {
+        if (!reviewData) return;
+        const updatedData = { ...reviewData };
+        if (updatedData[type]) {
+            (updatedData[type] as any[]).splice(index, 1);
+            setReviewData(updatedData);
+        }
+    };
+
 
     const tabs = [
         { id: 'general', label: 'General' },
         { id: 'programas', label: 'Programas' },
-        // { id: 'miembros', label: 'Miembros' },
-        // { id: 'domicilios', label: 'Domicilios' },
-        // { id: 'agentes', label: 'Agentes' },
+        { id: 'miembros', label: 'Miembros' },
+        { id: 'domicilios', label: 'Domicilios' },
+        { id: 'agentes', label: 'Agentes' },
     ];
 
     return (
@@ -145,7 +194,7 @@ const ImportReviewPage: React.FC = () => {
                  <CardContent>
                     <ReviewField 
                         label="Company Legal Name" 
-                        path="name"
+                        path="name.value"
                         data={reviewData.name} 
                         onChange={handleFieldChange} 
                     />
@@ -179,17 +228,17 @@ const ImportReviewPage: React.FC = () => {
                              <Card>
                                 <CardHeader><CardTitle>Datos Fiscales</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                     <ReviewField label="Razón Social" path="general.datosFiscales.razonSocial" data={reviewData.general.datosFiscales.razonSocial} onChange={handleFieldChange} />
-                                     <ReviewField label="RFC" path="general.datosFiscales.rfc" data={reviewData.general.datosFiscales.rfc} onChange={handleFieldChange} />
-                                     <ReviewField label="Teléfono" path="general.datosFiscales.telefono" data={reviewData.general.datosFiscales.telefono} onChange={handleFieldChange} />
-                                     <ReviewField label="Domicilio Fiscal" path="general.datosFiscales.domicilioFiscal" data={reviewData.general.datosFiscales.domicilioFiscal} onChange={handleFieldChange} />
+                                     <ReviewField label="Razón Social" path="general.datosFiscales.razonSocial.value" data={reviewData.general.datosFiscales.razonSocial} onChange={handleFieldChange} />
+                                     <ReviewField label="RFC" path="general.datosFiscales.rfc.value" data={reviewData.general.datosFiscales.rfc} onChange={handleFieldChange} />
+                                     <ReviewField label="Teléfono" path="general.datosFiscales.telefono.value" data={reviewData.general.datosFiscales.telefono} onChange={handleFieldChange} />
+                                     <ReviewField label="Domicilio Fiscal" path="general.datosFiscales.domicilioFiscal.value" data={reviewData.general.datosFiscales.domicilioFiscal} onChange={handleFieldChange} />
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardHeader><CardTitle>Acta Constitutiva</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                    <ReviewField label="No. de Escritura" path="general.actaConstitutiva.numeroEscritura" data={reviewData.general.actaConstitutiva.numeroEscritura} onChange={handleFieldChange} />
-                                    <ReviewField label="Fecha" path="general.actaConstitutiva.fecha" data={reviewData.general.actaConstitutiva.fecha} onChange={handleFieldChange} type="date" />
+                                    <ReviewField label="No. de Escritura" path="general.actaConstitutiva.numeroEscritura.value" data={reviewData.general.actaConstitutiva.numeroEscritura} onChange={handleFieldChange} />
+                                    <ReviewField label="Fecha" path="general.actaConstitutiva.fecha.value" data={reviewData.general.actaConstitutiva.fecha} onChange={handleFieldChange} type="date" />
                                 </CardContent>
                             </Card>
                         </div>
@@ -201,9 +250,9 @@ const ImportReviewPage: React.FC = () => {
                                 <CardContent className="space-y-4">
                                     {reviewData.programas.immex ? (
                                         <>
-                                            <ReviewField label="No. de Registro" path="programas.immex.numeroRegistro" data={reviewData.programas.immex.numeroRegistro} onChange={handleFieldChange} />
-                                            <ReviewField label="Modalidad" path="programas.immex.modalidad" data={reviewData.programas.immex.modalidad} onChange={handleFieldChange} />
-                                            <ReviewField label="Fecha de Autorización" path="programas.immex.fechaAutorizacion" data={reviewData.programas.immex.fechaAutorizacion} onChange={handleFieldChange} type="date" />
+                                            <ReviewField label="No. de Registro" path="programas.immex.numeroRegistro.value" data={reviewData.programas.immex.numeroRegistro} onChange={handleFieldChange} />
+                                            <ReviewField label="Modalidad" path="programas.immex.modalidad.value" data={reviewData.programas.immex.modalidad} onChange={handleFieldChange} />
+                                            <ReviewField label="Fecha de Autorización" path="programas.immex.fechaAutorizacion.value" data={reviewData.programas.immex.fechaAutorizacion} onChange={handleFieldChange} type="date" />
                                         </>
                                     ) : <p className="text-muted-foreground text-sm">No data found for IMMEX program.</p>}
                                 </CardContent>
@@ -213,13 +262,64 @@ const ImportReviewPage: React.FC = () => {
                                 <CardContent className="space-y-4">
                                     {reviewData.programas.prosec ? (
                                         <>
-                                             <ReviewField label="No. de Registro" path="programas.prosec.numeroRegistro" data={reviewData.programas.prosec.numeroRegistro} onChange={handleFieldChange} />
-                                             <ReviewField label="Sector" path="programas.prosec.sector" data={reviewData.programas.prosec.sector} onChange={handleFieldChange} />
+                                             <ReviewField label="No. de Registro" path="programas.prosec.numeroRegistro.value" data={reviewData.programas.prosec.numeroRegistro} onChange={handleFieldChange} />
+                                             <ReviewField label="Sector" path="programas.prosec.sector.value" data={reviewData.programas.prosec.sector} onChange={handleFieldChange} />
                                         </>
                                     ) : <p className="text-muted-foreground text-sm">No data found for PROSEC program.</p>}
                                 </CardContent>
                             </Card>
                          </div>
+                    )}
+                    {activeTab === 'miembros' && (
+                        <Card>
+                            <CardHeader><CardTitle>Miembros</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                {reviewData.miembros && reviewData.miembros.length > 0 ? reviewData.miembros.map((member, index) => (
+                                    <div key={index} className="p-4 border rounded-lg space-y-3 relative">
+                                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => handleRemoveItem('miembros', index)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                        <ReviewField label="Nombre" path={`miembros[${index}].nombre.value`} data={member.nombre} onChange={handleFieldChange} />
+                                        <ReviewField label="RFC" path={`miembros[${index}].rfc.value`} data={member.rfc} onChange={handleFieldChange} />
+                                    </div>
+                                )) : <p className="text-muted-foreground text-sm">No members were extracted from the document.</p>}
+                                <Button type="button" variant="outline" className="w-full" onClick={() => handleAddItem('miembros')}><PlusCircle className="h-4 w-4 mr-2" /> Add Member</Button>
+                            </CardContent>
+                        </Card>
+                    )}
+                     {activeTab === 'domicilios' && (
+                        <Card>
+                            <CardHeader><CardTitle>Domicilios</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                {reviewData.domicilios && reviewData.domicilios.length > 0 ? reviewData.domicilios.map((domicilio, index) => (
+                                     <div key={index} className="p-4 border rounded-lg space-y-3 relative">
+                                         <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => handleRemoveItem('domicilios', index)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                        <ReviewField label="Dirección Completa" path={`domicilios[${index}].direccionCompleta.value`} data={domicilio.direccionCompleta} onChange={handleFieldChange} />
+                                        <ReviewField label="Teléfono" path={`domicilios[${index}].telefono.value`} data={domicilio.telefono} onChange={handleFieldChange} />
+                                     </div>
+                                )) : <p className="text-muted-foreground text-sm">No addresses were extracted from the document.</p>}
+                                 <Button type="button" variant="outline" className="w-full" onClick={() => handleAddItem('domicilios')}><PlusCircle className="h-4 w-4 mr-2" /> Add Address</Button>
+                            </CardContent>
+                        </Card>
+                    )}
+                     {activeTab === 'agentes' && (
+                        <Card>
+                            <CardHeader><CardTitle>Agentes Aduanales</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                {reviewData.agentesAduanales && reviewData.agentesAduanales.length > 0 ? reviewData.agentesAduanales.map((agente, index) => (
+                                     <div key={index} className="p-4 border rounded-lg space-y-3 relative">
+                                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => handleRemoveItem('agentesAduanales', index)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                        <ReviewField label="Nombre" path={`agentesAduanales[${index}].nombre.value`} data={agente.nombre} onChange={handleFieldChange} />
+                                        <ReviewField label="No. de Patente" path={`agentesAduanales[${index}].numeroPatente.value`} data={agente.numeroPatente} onChange={handleFieldChange} />
+                                     </div>
+                                )) : <p className="text-muted-foreground text-sm">No customs agents were extracted from the document.</p>}
+                                 <Button type="button" variant="outline" className="w-full" onClick={() => handleAddItem('agentesAduanales')}><PlusCircle className="h-4 w-4 mr-2" /> Add Customs Agent</Button>
+                            </CardContent>
+                        </Card>
                     )}
                 </div>
             </div>

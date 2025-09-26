@@ -4,7 +4,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { useAuth } from '../hooks/useAuth';
 import { useApp } from '../hooks/useApp';
-import { FileText, FileDown, FileUp, Shield, BarChart2, Loader2 } from 'lucide-react';
+import { FileText, FileDown, FileUp, Shield, BarChart2, Loader2, Info } from 'lucide-react';
 import ReportPreviewDialog from '../components/reports/ReportPreviewDialog';
 import { getAllUsers } from '../services/firebaseService';
 import { UserProfile, CalendarEvent } from '../lib/types';
@@ -15,7 +15,7 @@ const ReportsPage = () => {
     const { user } = useAuth();
     const { activeCompany, events, taskCategories, companyUsers } = useApp();
     const { t } = useLanguage();
-    const isAdminOrConsultant = user?.role === 'admin' || user?.role === 'consultor';
+    const canManage = user?.role === 'admin' || user?.role === 'consultor';
     
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
@@ -198,7 +198,15 @@ const ReportsPage = () => {
                         <CardDescription>Upload a company's document to automatically extract and populate their profile.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <AIProfileImporter />
+                       {canManage ? (
+                            <AIProfileImporter />
+                        ) : (
+                            <div className="text-center p-8 border-2 border-dashed rounded-lg bg-secondary/50">
+                                 <Info className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                                 <h3 className="text-lg font-semibold">Feature Not Available</h3>
+                                 <p className="text-muted-foreground text-sm">Company profile import is only available for Admin and Consultant roles.</p>
+                             </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -257,7 +265,7 @@ const ReportsPage = () => {
                     </CardContent>
                 </Card>
 
-                {isAdminOrConsultant && (
+                {canManage && (
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Shield /> Administration Tools</CardTitle>

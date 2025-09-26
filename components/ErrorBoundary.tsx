@@ -1,3 +1,4 @@
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import Button from './ui/Button';
 import { AlertTriangle } from 'lucide-react';
@@ -11,7 +12,7 @@ interface State {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, State> {
-  // FIX: Use constructor for state initialization to resolve potential type errors.
+  // FIX: Initialize state in the constructor to ensure `props` are available.
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };

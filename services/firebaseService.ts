@@ -1,3 +1,7 @@
+
+// ---
+// title: services/firebaseService.ts
+// ---
 // MOCK Firebase Service
 // This file simulates a Firebase backend for demonstration purposes.
 
@@ -29,6 +33,10 @@ const MOCK_COMPANIES: Company[] = [
         miembros: [{ id: 'm-1', nombre: 'John Doe', rfc: 'DOEJ800101ABC', tipoPersona: 'Física', caracter: 'Socio', nacionalidad: 'Estadounidense', tributaEnMexico: true }],
         domicilios: [{ id: 'd-1', direccionCompleta: 'Parque Industrial Toluca 2000, Toluca, Edo. Méx.', telefono: '722-987-6543', programaVinculado: 'IMMEX' }],
         agentesAduanales: [{ id: 'a-1', nombre: 'Agencia Aduanal A', numeroPatente: '3001', estadoEncargo: 'Activo' }],
+        documents: [
+            { id: uuidv4(), name: 'ActaConstitutiva.pdf', url: '#', type: 'application/pdf', size: 2097152, uploadDate: new Date(Date.now() - 86400000 * 10).toISOString(), category: 'Legal' },
+            { id: uuidv4(), name: 'Autorizacion_IMMEX.pdf', url: '#', type: 'application/pdf', size: 1048576, uploadDate: new Date(Date.now() - 86400000 * 5).toISOString(), category: 'IMMEX' },
+        ],
     },
     { 
         id: 'comp-2', 
@@ -44,6 +52,7 @@ const MOCK_COMPANIES: Company[] = [
         miembros: [],
         domicilios: [],
         agentesAduanales: [],
+        documents: [],
     }
 ];
 
@@ -57,11 +66,11 @@ const MOCK_TASK_CATEGORIES: TaskCategory[] = [
 const getInitialDate = (offsetDays: number) => new Date(new Date().setDate(new Date().getDate() + offsetDays)).toISOString().split('T')[0];
 
 let MOCK_EVENTS: CalendarEvent[] = [
-    { id: uuidv4(), companyId: 'comp-1', title: 'Declaración mensual de IVA', dueDate: getInitialDate(2), description: 'Presentar la declaración de IVA correspondiente al mes anterior.', category: 'cat-1', priority: 'high', status: 'pending', assigneeId: 'user-3', reminders: [] },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Renovación de Certificación OEA', dueDate: getInitialDate(15), description: 'Iniciar el proceso de renovación de la certificación de Operador Económico Autorizado.', category: 'cat-4', priority: 'medium', status: 'pending', assigneeId: 'user-1', reminders: [{id: 'rem-1', time: '1d'}] },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Auditoría interna de Anexo 24', dueDate: getInitialDate(-5), description: 'Revisar registros y saldos del sistema de control de inventarios.', category: 'cat-2', priority: 'high', status: 'overdue', assigneeId: 'user-2', reminders: [] },
-    { id: uuidv4(), companyId: 'comp-1', title: 'Pago de impuestos de importación', dueDate: getInitialDate(-1), description: 'Realizar el pago correspondiente a la última importación.', category: 'cat-1', priority: 'medium', status: 'completed', assigneeId: 'user-3', reminders: [] },
-    { id: uuidv4(), companyId: 'comp-2', title: 'Presentar DIOT', dueDate: getInitialDate(5), description: 'Declaración Informativa de Operaciones con Terceros.', category: 'cat-1', priority: 'medium', status: 'pending', assigneeId: 'user-4', reminders: [] },
+    { id: uuidv4(), companyId: 'comp-1', title: 'Declaración mensual de IVA', dueDate: getInitialDate(2), description: 'Presentar la declaración de IVA correspondiente al mes anterior.', category: 'cat-1', priority: 'high', status: 'pending', assigneeId: 'user-3', reminders: [], attachments: [] },
+    { id: uuidv4(), companyId: 'comp-1', title: 'Renovación de Certificación OEA', dueDate: getInitialDate(15), description: 'Iniciar el proceso de renovación de la certificación de Operador Económico Autorizado.', category: 'cat-4', priority: 'medium', status: 'pending', assigneeId: 'user-1', reminders: [{id: 'rem-1', time: '1d'}], attachments: [] },
+    { id: uuidv4(), companyId: 'comp-1', title: 'Auditoría interna de Anexo 24', dueDate: getInitialDate(-5), description: 'Revisar registros y saldos del sistema de control de inventarios.', category: 'cat-2', priority: 'high', status: 'overdue', assigneeId: 'user-2', reminders: [], attachments: [] },
+    { id: uuidv4(), companyId: 'comp-1', title: 'Pago de impuestos de importación', dueDate: getInitialDate(-1), description: 'Realizar el pago correspondiente a la última importación.', category: 'cat-1', priority: 'medium', status: 'completed', assigneeId: 'user-3', reminders: [], attachments: [] },
+    { id: uuidv4(), companyId: 'comp-2', title: 'Presentar DIOT', dueDate: getInitialDate(5), description: 'Declaración Informativa de Operaciones con Terceros.', category: 'cat-1', priority: 'medium', status: 'pending', assigneeId: 'user-4', reminders: [], attachments: [] },
 ];
 
 let MOCK_OBLIGATIONS: Obligation[] = [
@@ -198,7 +207,7 @@ export const updateCompanyData = (company: Company): Promise<Company> => {
 export const addCalendarEvent = (companyId: string, eventData: Omit<CalendarEvent, 'id' | 'companyId'>): Promise<CalendarEvent> => {
     return new Promise(resolve => {
         setTimeout(() => {
-            const newEvent: CalendarEvent = { ...eventData, id: uuidv4(), companyId };
+            const newEvent: CalendarEvent = { ...eventData, id: uuidv4(), companyId, attachments: eventData.attachments || [] };
             MOCK_EVENTS.push(newEvent);
             resolve(JSON.parse(JSON.stringify(newEvent)));
         }, apiLatency());

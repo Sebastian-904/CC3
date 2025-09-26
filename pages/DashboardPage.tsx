@@ -10,23 +10,42 @@ import { Loader2, Sparkles, ShieldCheck } from 'lucide-react';
 import AIAssistantDialog from '../components/dashboard/AIAssistantDialog';
 import Button from '../components/ui/Button';
 import AIHealthCheckDialog from '../components/dashboard/AIHealthCheckDialog';
+import ComplianceNewsFeed from '../components/dashboard/ComplianceNewsFeed';
+import TaskEditDialog from '../components/dashboard/TaskEditDialog';
 
 
 const DashboardPage: React.FC = () => {
-    const { events, loading } = useApp();
+    const { events, loading, taskCategories } = useApp();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
     const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
     const [isHealthCheckOpen, setIsHealthCheckOpen] = useState(false);
 
-    const filteredEvents = useMemo(() => {
-        return events
-            .filter(event => new Date(event.dueDate).toDateString() === selectedDate.toDateString())
-            .sort((a, b) => a.title.localeCompare(b.title));
-    }, [events, selectedDate]);
-    
+    // State for the unified TaskEditDialog
+    const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+    const [taskInitialData, setTaskInitialData] = useState<Partial<Omit<CalendarEvent, 'id' | 'companyId'>> | undefined>(undefined);
+
     const handleSelectEvent = (event: CalendarEvent) => {
         setSelectedEvent(event);
+    };
+
+    const handleCreateTaskFromNews = (task: { title: string, description: string }) => {
+        setTaskInitialData({
+            title: task.title,
+            description: task.description,
+            category: taskCategories[0]?.id || '', // Set a default category
+        });
+        setIsTaskDialogOpen(true);
+    };
+
+    const handleOpenNewTaskDialog = () => {
+        setTaskInitialData(undefined); // No pre-filled data
+        setIsTaskDialogOpen(true);
+    };
+
+    const handleCloseTaskDialog = () => {
+        setIsTaskDialogOpen(false);
+        setTaskInitialData(undefined);
     };
 
     if (loading) {
@@ -59,12 +78,15 @@ const DashboardPage: React.FC = () => {
                                 setSelectedEvent(null);
                             }}
                             events={events}
+                            onSelectEvent={handleSelectEvent}
                         />
+                         <ComplianceNewsFeed onCreateTask={handleCreateTaskFromNews} />
                          <DailyEventsList
-                            events={filteredEvents}
+                            events={events}
                             selectedDate={selectedDate}
                             onSelectEvent={handleSelectEvent}
                             selectedEventId={selectedEvent?.id}
+                            onNewTaskClick={handleOpenNewTaskDialog}
                         />
                     </div>
                     <div className="lg:col-span-1">
@@ -76,6 +98,12 @@ const DashboardPage: React.FC = () => {
             </div>
             <AIAssistantDialog isOpen={isAIAssistantOpen} onClose={() => setIsAIAssistantOpen(false)} />
             <AIHealthCheckDialog isOpen={isHealthCheckOpen} onClose={() => setIsHealthCheckOpen(false)} />
+            <TaskEditDialog
+                isOpen={isTaskDialogOpen}
+                onClose={handleCloseTaskDialog}
+                initialData={taskInitialData}
+                initialDate={selectedDate.toISOString().split('T')[0]}
+            />
         </>
     );
 };

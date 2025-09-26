@@ -37,12 +37,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
             <div className="flex items-center gap-2">
                 <NotificationsMenu />
                 <div className="relative" ref={menuRef}>
-                    <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setMenuOpen(!menuOpen)}>
-                        <img
-                            src={user?.avatarUrl || `https://i.pravatar.cc/150?u=${user?.uid}`}
-                            alt="User avatar"
-                            className="h-8 w-8 rounded-full"
-                        />
+                    <Button variant="ghost" size="icon" className="rounded-full w-8 h-8" onClick={() => setMenuOpen(!menuOpen)}>
+                        <UserIcon className="h-5 w-5" />
                     </Button>
                     {menuOpen && (
                         <div 

@@ -1,3 +1,7 @@
+
+// ---
+// title: lib/types.ts
+// ---
 export type UserRole = 'admin' | 'consultor' | 'cliente';
 
 export interface UserProfile {
@@ -26,6 +30,13 @@ export interface Reminder {
     time: ReminderTime;
 }
 
+export interface Attachment {
+  id: string;
+  name: string;
+  url: string; // In a real app, this would be a download URL
+  type: string; // e.g., 'application/pdf'
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -37,12 +48,23 @@ export interface CalendarEvent {
   assigneeId?: string;
   companyId: string;
   reminders: Reminder[];
+  attachments?: Attachment[];
 }
 
 export interface TaskCategory {
   id: string;
   name: string;
   color: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number; // in bytes
+  uploadDate: string; // ISO string
+  category: string; // e.g., 'Fiscal', 'Legal'
 }
 
 export interface Company {
@@ -75,6 +97,7 @@ export interface Company {
   miembros: { id: string; nombre: string; rfc: string; tipoPersona: 'Física' | 'Moral'; caracter: string; nacionalidad: string; tributaEnMexico: boolean; }[];
   domicilios: { id: string; direccionCompleta: string; telefono: string; programaVinculado: string; }[];
   agentesAduanales: { id: string; nombre: string; numeroPatente: string; estadoEncargo: 'Activo' | 'Pendiente' | 'Revocado' }[];
+  documents?: Document[];
 }
 
 export interface AITaskSuggestion {
