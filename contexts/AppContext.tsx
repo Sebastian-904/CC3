@@ -1,167 +1,163 @@
-import React, { createContext, useState, useEffect, ReactNode, useCallback, useContext } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
 import { 
-    Company, 
-    CalendarEvent, 
-    TaskCategory, 
-    Obligation, 
-    UserProfile, 
-    Notification, 
-    AIExtractedCompany,
-    ComplianceDocument,
-    ObligationFrequency
-} from '../lib/types';
-import {
-    getMockCompany,
-    getMockEvents,
-    getMockTaskCategories,
+    getMockCompany, 
+    getMockEvents, 
+    getMockTaskCategories, 
     getMockObligations,
     getMockCompanyUsers,
     getMockNotifications,
-    getMockComplianceDocs
+    getMockComplianceDocs,
 } from '../services/firebaseService';
+import { Company, CalendarEvent, TaskCategory, Obligation, UserProfile, Notification, ComplianceDocument, AIExtractedCompany } from '../lib/types';
 
 interface AppContextType {
-  loading: boolean;
-  activeCompany: Company | null;
-  updateCompany: (companyData: Company) => Promise<void>;
-  events: CalendarEvent[];
-  addEvent: (eventData: Omit<CalendarEvent, 'id' | 'companyId'>) => Promise<void>;
-  updateEvent: (eventData: CalendarEvent) => Promise<void>;
-  taskCategories: TaskCategory[];
-  obligations: Obligation[];
-  addObligation: (data: { title: string; description: string; category: string; frequency: ObligationFrequency }) => Promise<void>;
-  deleteObligation: (id: string) => Promise<void>;
-  companyUsers: UserProfile[];
-  notifications: Notification[];
-  markNotificationAsRead: (id: string) => void;
-  markAllNotificationsAsRead: () => void;
-  importedCompanyData: AIExtractedCompany | null;
-  setImportedCompanyData: (data: AIExtractedCompany | null) => void;
-  complianceDocuments: ComplianceDocument[];
-  addNewComplianceDocument: (doc: Omit<ComplianceDocument, 'id' | 'uploadDate'>) => Promise<void>;
-  deleteComplianceDocument: (id: string) => Promise<void>;
+    loading: boolean;
+    activeCompany: Company | null;
+    companyUsers: UserProfile[];
+    events: CalendarEvent[];
+    taskCategories: TaskCategory[];
+    obligations: Obligation[];
+    notifications: Notification[];
+    complianceDocuments: ComplianceDocument[];
+    importedCompanyData: AIExtractedCompany | null;
+    setImportedCompanyData: (data: AIExtractedCompany | null) => void;
+    updateCompany: (company: Company) => Promise<void>;
+    addEvent: (event: Omit<CalendarEvent, 'id' | 'companyId'>) => Promise<void>;
+    updateEvent: (event: CalendarEvent) => Promise<void>;
+    addObligation: (obligation: Omit<Obligation, 'id' | 'companyId' | 'status'>) => Promise<void>;
+    deleteObligation: (id: string) => Promise<void>;
+    markNotificationAsRead: (id: string) => void;
+    markAllNotificationsAsRead: () => void;
+    addNewComplianceDocument: (doc: Omit<ComplianceDocument, 'id' | 'uploadDate'>) => Promise<void>;
+    deleteComplianceDocument: (id: string) => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const authContext = useContext(AuthContext);
-  const user = authContext?.user;
+    const authContext = useContext(AuthContext);
+    const user = authContext?.user;
 
-  const [loading, setLoading] = useState(true);
-  const [activeCompany, setActiveCompany] = useState<Company | null>(null);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [taskCategories, setTaskCategories] = useState<TaskCategory[]>([]);
-  const [obligations, setObligations] = useState<Obligation[]>([]);
-  const [companyUsers, setCompanyUsers] = useState<UserProfile[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [importedCompanyData, setImportedCompanyData] = useState<AIExtractedCompany | null>(null);
-  const [complianceDocuments, setComplianceDocuments] = useState<ComplianceDocument[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [activeCompany, setActiveCompany] = useState<Company | null>(null);
+    const [companyUsers, setCompanyUsers] = useState<UserProfile[]>([]);
+    const [events, setEvents] = useState<CalendarEvent[]>([]);
+    const [taskCategories, setTaskCategories] = useState<TaskCategory[]>([]);
+    const [obligations, setObligations] = useState<Obligation[]>([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [complianceDocuments, setComplianceDocuments] = useState<ComplianceDocument[]>([]);
+    const [importedCompanyData, setImportedCompanyData] = useState<AIExtractedCompany | null>(null);
 
-  useEffect(() => {
-      if (user) {
-          setLoading(true);
-          const companyData = getMockCompany(user.companyId);
-          setActiveCompany(companyData || null);
-          setEvents(getMockEvents(user.companyId));
-          setTaskCategories(getMockTaskCategories(user.companyId));
-          setObligations(getMockObligations(user.companyId));
-          setCompanyUsers(getMockCompanyUsers(user.companyId));
-          setNotifications(getMockNotifications());
-          setComplianceDocuments(getMockComplianceDocs());
-          setLoading(false);
-      } else {
-          // Clear data on logout
-          setActiveCompany(null);
-          setEvents([]);
-          setTaskCategories([]);
-          setObligations([]);
-          setCompanyUsers([]);
-          setNotifications([]);
-          setComplianceDocuments([]);
-      }
-  }, [user]);
 
-  const updateCompany = useCallback(async (companyData: Company) => {
-      await new Promise(res => setTimeout(res, 500));
-      setActiveCompany(companyData);
-  }, []);
+    useEffect(() => {
+        if (user?.companyId) {
+            setLoading(true);
+            const companyId = user.companyId;
+            // Simulate fetching all data for the company
+            const companyData = getMockCompany(companyId);
+            const usersData = getMockCompanyUsers(companyId);
+            const eventsData = getMockEvents(companyId);
+            const categoriesData = getMockTaskCategories(companyId);
+            const obligationsData = getMockObligations(companyId);
+            const notificationsData = getMockNotifications();
+            const complianceDocsData = getMockComplianceDocs();
+            
+            setActiveCompany(companyData || null);
+            setCompanyUsers(usersData);
+            setEvents(eventsData);
+            setTaskCategories(categoriesData);
+            setObligations(obligationsData);
+            setNotifications(notificationsData);
+            setComplianceDocuments(complianceDocsData);
 
-  const addEvent = useCallback(async (eventData: Omit<CalendarEvent, 'id' | 'companyId'>) => {
-      await new Promise(res => setTimeout(res, 500));
-      const newEvent: CalendarEvent = {
-          ...eventData,
-          id: `evt-${Date.now()}`,
-          companyId: activeCompany!.id,
-      };
-      setEvents(prev => [...prev, newEvent]);
-  }, [activeCompany]);
+            setLoading(false);
+        } else if (!authContext?.loading) {
+            // If there's no user and auth is not loading, we are done.
+            setLoading(false);
+        }
+    }, [user, authContext?.loading]);
+    
+    // MOCK DATA MODIFICATION FUNCTIONS
+    const updateCompany = useCallback(async (company: Company) => {
+        await new Promise(res => setTimeout(res, 500));
+        setActiveCompany(company);
+    }, []);
 
-  const updateEvent = useCallback(async (eventData: CalendarEvent) => {
-      await new Promise(res => setTimeout(res, 500));
-      setEvents(prev => prev.map(e => e.id === eventData.id ? eventData : e));
-  }, []);
+    const addEvent = useCallback(async (event: Omit<CalendarEvent, 'id' | 'companyId'>) => {
+        await new Promise(res => setTimeout(res, 500));
+        if (user) {
+            setEvents(prev => [...prev, { ...event, id: `evt-${Date.now()}`, companyId: user.companyId }]);
+        }
+    }, [user]);
 
-  const addObligation = useCallback(async (data: { title: string; description: string; category: string; frequency: ObligationFrequency }) => {
-      await new Promise(res => setTimeout(res, 500));
-      const newOb: Obligation = { ...data, id: `ob-${Date.now()}`, companyId: activeCompany!.id, status: 'active' };
-      setObligations(prev => [...prev, newOb]);
-  }, [activeCompany]);
+    const updateEvent = useCallback(async (event: CalendarEvent) => {
+        await new Promise(res => setTimeout(res, 500));
+        setEvents(prev => prev.map(e => e.id === event.id ? event : e));
+    }, []);
+    
+    const addObligation = useCallback(async (obligation: Omit<Obligation, 'id' | 'companyId' | 'status'>) => {
+        await new Promise(res => setTimeout(res, 500));
+        if (user) {
+            const newObligation: Obligation = {
+                ...obligation,
+                id: `ob-${Date.now()}`,
+                companyId: user.companyId,
+                status: 'active'
+            };
+            setObligations(prev => [...prev, newObligation]);
+        }
+    }, [user]);
 
-  const deleteObligation = useCallback(async (id: string) => {
-      await new Promise(res => setTimeout(res, 500));
-      setObligations(prev => prev.filter(ob => ob.id !== id));
-  }, []);
+    const deleteObligation = useCallback(async (id: string) => {
+        await new Promise(res => setTimeout(res, 500));
+        setObligations(prev => prev.filter(ob => ob.id !== id));
+    }, []);
 
-  const markNotificationAsRead = useCallback((id: string) => {
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-  }, []);
+    const markNotificationAsRead = useCallback((id: string) => {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    }, []);
+    
+    const markAllNotificationsAsRead = useCallback(() => {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    }, []);
 
-  const markAllNotificationsAsRead = useCallback(() => {
-      setNotifications(prev => prev.map(n => ({...n, isRead: true})));
-  }, []);
+    const addNewComplianceDocument = useCallback(async (doc: Omit<ComplianceDocument, 'id' | 'uploadDate'>) => {
+        await new Promise(res => setTimeout(res, 1000));
+        const newDoc: ComplianceDocument = {
+            ...doc,
+            id: `cdoc-${Date.now()}`,
+            uploadDate: new Date().toISOString()
+        };
+        setComplianceDocuments(prev => [newDoc, ...prev]);
+    }, []);
 
-  const addNewComplianceDocument = useCallback(async (doc: Omit<ComplianceDocument, 'id' | 'uploadDate'>) => {
-      await new Promise(res => setTimeout(res, 500));
-      const newDoc: ComplianceDocument = {
-          ...doc,
-          id: `cdoc-${Date.now()}`,
-          uploadDate: new Date().toISOString()
-      };
-      setComplianceDocuments(prev => [newDoc, ...prev]);
-  }, []);
+    const deleteComplianceDocument = useCallback(async (id: string) => {
+        await new Promise(res => setTimeout(res, 500));
+        setComplianceDocuments(prev => prev.filter(doc => doc.id !== id));
+    }, []);
 
-  const deleteComplianceDocument = useCallback(async (id: string) => {
-      await new Promise(res => setTimeout(res, 500));
-      setComplianceDocuments(prev => prev.filter(doc => doc.id !== id));
-  }, []);
+    const value = { 
+        loading, 
+        activeCompany,
+        companyUsers,
+        events, 
+        taskCategories,
+        obligations,
+        notifications,
+        complianceDocuments,
+        importedCompanyData,
+        setImportedCompanyData,
+        updateCompany,
+        addEvent,
+        updateEvent,
+        addObligation,
+        deleteObligation,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
+        addNewComplianceDocument,
+        deleteComplianceDocument,
+    };
 
-  const value = { 
-      loading, 
-      activeCompany, 
-      updateCompany,
-      events,
-      addEvent,
-      updateEvent,
-      taskCategories,
-      obligations,
-      addObligation,
-      deleteObligation,
-      companyUsers,
-      notifications,
-      markNotificationAsRead,
-      markAllNotificationsAsRead,
-      importedCompanyData,
-      setImportedCompanyData,
-      complianceDocuments,
-      addNewComplianceDocument,
-      deleteComplianceDocument
-  };
-
-  return (
-      <AppContext.Provider value={value}>
-          {children}
-      </AppContext.Provider>
-  );
+    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

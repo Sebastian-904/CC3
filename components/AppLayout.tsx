@@ -8,6 +8,13 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     return (
         <div className="flex h-screen bg-secondary/50 dark:bg-background">
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/60 z-30 lg:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                    aria-hidden="true"
+                />
+            )}
             <AppSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
             <div className={cn(
                 "flex flex-1 flex-col transition-all duration-300",

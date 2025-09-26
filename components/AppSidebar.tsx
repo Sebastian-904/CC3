@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -40,15 +41,18 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, setIsOpen }) => {
 
     return (
         <aside className={cn(
-            "fixed inset-y-0 left-0 z-40 hidden h-full flex-col border-r bg-card transition-all duration-300 lg:flex",
-            { 'w-64': isOpen },
-            { 'w-16': !isOpen }
+            "fixed inset-y-0 left-0 z-40 h-full flex flex-col border-r bg-card transition-transform duration-300 lg:transition-all",
+            // Width: on mobile it's always w-64. On desktop, it toggles.
+            "w-64", 
+            { "lg:w-16": !isOpen },
+            // On mobile, it slides. On desktop, it's always visible.
+            isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}>
             <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-                <a href="#/" className="flex items-center gap-2 font-semibold">
+                <NavLink to="/dashboard" className="flex items-center gap-2 font-semibold">
                     <GanttChartSquare className="h-6 w-6 text-primary" />
                     {isOpen && <span className="">CompliancePro</span>}
-                </a>
+                </NavLink>
                 <Button variant="outline" size="icon" className="ml-auto h-8 w-8 hidden" onClick={() => setIsOpen(!isOpen)}>
                    {isOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </Button>

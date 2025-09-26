@@ -12,21 +12,22 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  // FIX: Use a property initializer for state to avoid constructor issues and ensure `this.state` is properly typed.
-  // FIX: Removed explicit 'public' modifiers to resolve typing issue and align with idiomatic React style.
-  state: State = {
+  // FIX: Initialize state using a class property. This ensures `this.state` is available throughout the component lifecycle
+  // and resolves errors related to accessing properties on an uninitialized state.
+  public state: State = {
     hasError: false,
+    error: undefined,
   };
 
-  static getDerivedStateFromError(error: Error): State {
+  public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
   }
 
-  private handleRefresh = () => {
+  public handleRefresh = () => {
     window.location.reload();
   };
 
