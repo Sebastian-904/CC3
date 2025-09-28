@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { 
     Company, CalendarEvent, Obligation, UserProfile, Notification, TaskCategory, ComplianceDocument, AIExtractedCompany
@@ -103,23 +104,65 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             ...event,
             id: `evt-${Date.now()}`,
             companyId: user.companyId,
+            createdAt: new Date().toISOString(),
         };
+        
+        const newNotifications: Notification[] = [];
+        if (newEvent.reminders && newEvent.reminders.length > 0) {
+            const reminderMap: { [key: string]: string } = {
+                '1d': 'in 1 day',
+                '2d': 'in 2 days',
+                '1w': 'in 1 week',
+            };
+            newNotifications.push(...newEvent.reminders.map((r, index) => ({
+                id: `notif-${Date.now()}-${index}`,
+                userId: newEvent.assignedTo || user.uid,
+                type: 'TASK_REMINDER' as const,
+                message: `Reminder: Task "${newEvent.title}" is due ${reminderMap[r] || 'soon'}.`,
+                isRead: false,
+                timestamp: new Date().toISOString(),
+            })));
+        }
+
         let updatedEvents: CalendarEvent[] = [];
+        let updatedNotifications: Notification[] = [];
         setState(s => {
             updatedEvents = [...s.events, newEvent];
-            return { ...s, events: updatedEvents };
+            updatedNotifications = [...s.notifications, ...newNotifications];
+            return { ...s, events: updatedEvents, notifications: updatedNotifications };
         });
-        await persistState({ events: updatedEvents });
+        await persistState({ events: updatedEvents, notifications: updatedNotifications });
     }, [user, persistState]);
 
     const updateEvent = useCallback(async (event: CalendarEvent) => {
+        // For this simulation, we'll generate new notifications when reminders are updated.
+        // A production app might clear old reminder notifications first.
+        const newNotifications: Notification[] = [];
+        if (event.reminders && event.reminders.length > 0) {
+            const reminderMap: { [key: string]: string } = {
+                '1d': 'in 1 day',
+                '2d': 'in 2 days',
+                '1w': 'in 1 week',
+            };
+            newNotifications.push(...event.reminders.map((r, index) => ({
+                id: `notif-update-${Date.now()}-${index}`,
+                userId: event.assignedTo || user?.uid || '',
+                type: 'TASK_REMINDER' as const,
+                message: `Reminder updated for task "${event.title}", due ${reminderMap[r] || 'soon'}.`,
+                isRead: false,
+                timestamp: new Date().toISOString(),
+            })));
+        }
+
         let updatedEvents: CalendarEvent[] = [];
+        let updatedNotifications: Notification[] = [];
         setState(s => {
             updatedEvents = s.events.map(e => e.id === event.id ? event : e);
-            return { ...s, events: updatedEvents };
+            updatedNotifications = [...s.notifications, ...newNotifications];
+            return { ...s, events: updatedEvents, notifications: updatedNotifications };
         });
-        await persistState({ events: updatedEvents });
-    }, [persistState]);
+        await persistState({ events: updatedEvents, notifications: updatedNotifications });
+    }, [user, persistState]);
     
     const updateCompany = useCallback(async (company: Company) => {
         setState(s => ({ ...s, activeCompany: company }));

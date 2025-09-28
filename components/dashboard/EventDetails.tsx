@@ -1,3 +1,5 @@
+
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '../ui/Dialog';
 import { CalendarEvent } from '../../lib/types';
@@ -12,6 +14,15 @@ interface EventDetailsProps {
   onClose: () => void;
   event: CalendarEvent;
 }
+
+const formatReminder = (reminder: string): string => {
+    const remindersMap: { [key: string]: string } = {
+        '1d': '1 day before',
+        '2d': '2 days before',
+        '1w': '1 week before',
+    };
+    return remindersMap[reminder] || reminder;
+};
 
 const EventDetails: React.FC<EventDetailsProps> = ({ isOpen, onClose, event }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -55,6 +66,16 @@ const EventDetails: React.FC<EventDetailsProps> = ({ isOpen, onClose, event }) =
                     <h4 className="font-semibold text-sm">Description</h4>
                     <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{event.description || "No description provided."}</p>
                 </div>
+                {event.reminders && event.reminders.length > 0 && (
+                    <div>
+                        <h4 className="font-semibold text-sm">Reminders</h4>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                            {event.reminders.map(r => (
+                                <Badge key={r} variant="secondary">{formatReminder(r)}</Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </DialogContent>
             <DialogFooter>
                 <Button variant="outline" onClick={onClose}>Close</Button>
