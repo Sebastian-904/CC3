@@ -274,3 +274,58 @@ export const setData = (companyId: string, data: Partial<AppData>): Promise<void
         }, SIMULATED_LATENCY);
     });
 };
+
+export const createCompany = (companyDetails: { name: string; rfc: string }): Promise<Company> => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const newCompanyId = `comp-${Date.now()}`;
+            
+            const newCompany: Company = {
+                id: newCompanyId,
+                name: companyDetails.name,
+                general: {
+                    datosFiscales: {
+                        razonSocial: companyDetails.name,
+                        rfc: companyDetails.rfc,
+                        domicilioFiscal: '',
+                        telefono: '',
+                    },
+                    actaConstitutiva: {
+                        numeroEscritura: '',
+                        fecha: '',
+                        notarioPublico: '',
+                    },
+                    representanteLegal: {
+                        nombre: '',
+                        poderNotarial: '',
+                    }
+                },
+                programas: {},
+                domicilios: [],
+                miembros: [],
+                agentesAduanales: [],
+                anexo24: undefined,
+                padrones: undefined
+            };
+
+            const MOCK_TASK_CATEGORIES: TaskCategory[] = [
+                { id: 'cat-1', name: 'Fiscal' },
+                { id: 'cat-2', name: 'Aduanero' },
+                { id: 'cat-3', name: 'Legal Corporativo' },
+                { id: 'cat-4', name: 'Comercio Exterior' },
+            ];
+
+            MOCK_DB[newCompanyId] = {
+                company: newCompany,
+                companyUsers: [], // Starts with no users
+                events: [],
+                obligations: [],
+                notifications: [],
+                taskCategories: MOCK_TASK_CATEGORIES,
+                complianceDocuments: []
+            };
+
+            resolve(newCompany);
+        }, SIMULATED_LATENCY);
+    });
+};

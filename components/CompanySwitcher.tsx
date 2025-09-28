@@ -1,12 +1,14 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Building, ChevronsUpDown, Check, Loader2 } from 'lucide-react';
+import { Building, ChevronsUpDown, Check, Loader2, PlusCircle } from 'lucide-react';
 import Button from './ui/Button';
 import { useAuth } from '../hooks/useAuth';
 import { getAvailableCompanies } from '../services/firebaseService';
 import useOnClickOutside from '../hooks/useOnClickOutside';
 import { useApp } from '../hooks/useApp';
 import { cn } from '../lib/utils';
+import CreateCompanyDialog from './consultant-dashboard/CreateCompanyDialog';
 
 interface Company {
     id: string;
@@ -19,6 +21,7 @@ const CompanySwitcher: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
     const switcherRef = useRef<HTMLDivElement>(null);
 
     useOnClickOutside(switcherRef, () => setIsOpen(false));
@@ -83,15 +86,27 @@ const CompanySwitcher: React.FC = () => {
                              <button
                                 key={company.id}
                                 onClick={() => handleSwitch(company.id)}
-                                className="flex items-center justify-between w-full text-left px-4 py-2 text-sm hover:bg-accent"
+                                className={cn(
+                                    "flex items-center justify-between w-full text-left px-4 py-2 text-sm hover:bg-accent",
+                                    user?.companyId === company.id && "bg-accent"
+                                )}
                             >
                                 <span className="truncate">{company.name}</span>
                                 {user?.companyId === company.id && <Check className="h-4 w-4" />}
                             </button>
                         ))}
+                         <div className="my-1 h-px bg-border" />
+                        <button
+                            onClick={() => { setIsOpen(false); setIsCreateOpen(true); }}
+                            className="flex items-center w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent"
+                        >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Create New Company
+                        </button>
                     </div>
                  </div>
             )}
+            <CreateCompanyDialog isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
         </div>
     );
 };
