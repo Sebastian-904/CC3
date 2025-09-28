@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useToast, ToastProps } from '../../contexts/ToastContext';
 import { cn } from '../../lib/utils';
 import { X, AlertCircle, CheckCircle } from 'lucide-react';
@@ -16,16 +16,14 @@ export const Toaster: React.FC = () => {
 };
 
 const Toast: React.FC<ToastProps> = ({ id, title, description, variant = 'default' }) => {
-  const [isVisible, setIsVisible] = useState(false);
+  const { removeToast } = useToast();
   
-  // A simple way to auto-dismiss toasts. A real implementation might handle this in the provider.
   useEffect(() => {
-    setIsVisible(true);
     const timer = setTimeout(() => {
-      setIsVisible(false);
+      removeToast(id!);
     }, 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [id, removeToast]);
 
   const toastVariants = {
     default: 'bg-background border-border',
@@ -33,8 +31,6 @@ const Toast: React.FC<ToastProps> = ({ id, title, description, variant = 'defaul
   };
 
   const Icon = variant === 'destructive' ? AlertCircle : CheckCircle;
-
-  if (!isVisible) return null;
 
   return (
     <div
@@ -48,7 +44,7 @@ const Toast: React.FC<ToastProps> = ({ id, title, description, variant = 'defaul
             {title && <h3 className="font-semibold">{title}</h3>}
             {description && <p className="text-sm opacity-90">{description}</p>}
         </div>
-         <button className="absolute top-2 right-2 p-1 rounded-md opacity-70 hover:opacity-100 transition-opacity">
+         <button onClick={() => removeToast(id!)} className="absolute top-2 right-2 p-1 rounded-md opacity-70 hover:opacity-100 transition-opacity">
             <X className="h-4 w-4" />
         </button>
     </div>

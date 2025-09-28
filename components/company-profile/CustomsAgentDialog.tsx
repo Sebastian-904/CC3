@@ -15,8 +15,8 @@ const CustomsAgentDialog: React.FC<CustomsAgentDialogProps> = ({ isOpen, onClose
   return (
     <Dialog isOpen={isOpen} onClose={onClose}>
         <DialogHeader>
-            <DialogTitle>Manage Customs Agents</DialogTitle>
-            <DialogDescription>Manage customs agents for {company.name}.</DialogDescription>
+            <DialogTitle>Gestionar Encargos Conferidos</DialogTitle>
+            <DialogDescription>Administrar los encargos conferidos para {company.name}.</DialogDescription>
             <DialogClose onClose={onClose} />
         </DialogHeader>
         <DialogContent>

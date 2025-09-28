@@ -38,17 +38,31 @@ export interface Company {
         immex?: {
             numeroRegistro: string;
             tipo: string;
+            fechaAutorizacion: string;
+            fechaRenovacion?: string;
+            domiciliosAutorizados: { id: string; direccion: string }[];
         };
         prosec?: {
             numeroRegistro: string;
             sector: string;
+            fechaAutorizacion: string;
+            fechaRenovacion?: string;
+            domiciliosAutorizados: { id: string; direccion: string }[];
         };
         // Add other programs as needed
     };
     domicilios: { id: string; direccionCompleta: string; telefono: string }[];
     miembros: { id: string; nombre: string; rfc: string }[];
     agentesAduanales: { id: string; nombre: string; numeroPatente: string; estadoEncargo: 'Activo' | 'Inactivo' }[];
-    // Add other fields as needed
+    anexo24?: {
+        empresa: string;
+        linkAcceso: string;
+        version: string;
+    };
+    padrones?: {
+        importadores: { numero: string; activo: boolean };
+        sectoriales: { id: string; sector: string; fraccion: string }[];
+    };
 }
 
 export type EventStatus = 'pending' | 'completed' | 'overdue';

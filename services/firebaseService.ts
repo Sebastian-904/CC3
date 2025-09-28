@@ -54,8 +54,24 @@ const getInitialDataForCompany1 = (companyId: string) => {
             }
         },
         programas: {
-            immex: { numeroRegistro: 'IM-9876-2010', tipo: 'Industrial' },
-            prosec: { numeroRegistro: 'PS-5432-2011', sector: 'Electrónico' },
+            immex: { 
+                numeroRegistro: 'IM-9876-2010', 
+                tipo: 'Industrial',
+                fechaAutorizacion: '2010-06-15',
+                fechaRenovacion: '2025-06-15',
+                domiciliosAutorizados: [
+                    { id: 'dimmex-1', direccion: 'Av. Innovación 123, Parque Tecnológico, Querétaro' },
+                    { id: 'dimmex-2', direccion: 'Blvd. Bernardo Quintana 100, Querétaro' }
+                ]
+            },
+            prosec: { 
+                numeroRegistro: 'PS-5432-2011', 
+                sector: 'Electrónico',
+                fechaAutorizacion: '2011-03-22',
+                 domiciliosAutorizados: [
+                    { id: 'dprosec-1', direccion: 'Av. Innovación 123, Parque Tecnológico, Querétaro' }
+                ]
+            },
         },
         domicilios: [
             { id: 'dom-1', direccionCompleta: 'Blvd. Bernardo Quintana 100, Querétaro', telefono: '442-987-6543' }
@@ -65,7 +81,19 @@ const getInitialDataForCompany1 = (companyId: string) => {
         ],
         agentesAduanales: [
             { id: 'aa-1', nombre: 'Agencia Aduanal del Bajío', numeroPatente: '3333', estadoEncargo: 'Activo' }
-        ]
+        ],
+        anexo24: {
+            empresa: 'Software Anexo Pro',
+            linkAcceso: 'https://anexo.pro/login',
+            version: '3.1.5'
+        },
+        padrones: {
+            importadores: { numero: 'PIM-123456', activo: true },
+            sectoriales: [
+                { id: 'sec-1', sector: 'Electrónico', fraccion: '8517.12.01' },
+                { id: 'sec-2', sector: 'Siderúrgico', fraccion: '7208.10.01' }
+            ]
+        }
     };
 
     const MOCK_TASK_CATEGORIES: TaskCategory[] = [
@@ -122,7 +150,12 @@ const getInitialDataForCompany2 = (companyId: string) => {
             representanteLegal: { nombre: 'Roberto Morales', poderNotarial: '67890' }
         },
         programas: {
-            prosec: { numeroRegistro: 'PS-1122-2016', sector: 'Automotriz' },
+            prosec: { 
+                numeroRegistro: 'PS-1122-2016', 
+                sector: 'Automotriz',
+                fechaAutorizacion: '2016-02-20',
+                domiciliosAutorizados: []
+            },
         },
         domicilios: [],
         miembros: [],

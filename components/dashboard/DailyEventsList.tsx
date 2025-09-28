@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { CalendarEvent, EventStatus } from '../../lib/types';
@@ -19,11 +18,15 @@ const statusColors: Record<EventStatus, string> = {
 
 const DailyEventsList: React.FC<DailyEventsListProps> = ({ selectedDate, events }) => {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const { companyUsers } = useApp();
+  const { companyUsers, taskCategories } = useApp();
 
   const userMap = useMemo(() => 
     new Map(companyUsers.map(u => [u.uid, u.displayName]))
   , [companyUsers]);
+
+  const categoryMap = useMemo(() =>
+    new Map(taskCategories.map(c => [c.id, c.name]))
+  , [taskCategories]);
 
   const dailyEvents = useMemo(() => {
     return events
@@ -54,7 +57,7 @@ const DailyEventsList: React.FC<DailyEventsListProps> = ({ selectedDate, events 
                       <div className={cn("h-2.5 w-2.5 rounded-full flex-shrink-0", statusColors[event.status])} />
                       <div className="flex-1">
                         <p className="text-sm font-medium truncate">{event.title}</p>
-                        <p className="text-xs text-muted-foreground">{event.category}</p>
+                        <p className="text-xs text-muted-foreground">{categoryMap.get(event.category) || event.category}</p>
                       </div>
                       <div 
                         className="h-6 w-6 rounded-full bg-secondary flex-shrink-0 flex items-center justify-center text-xs font-semibold text-secondary-foreground"
