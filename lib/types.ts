@@ -64,6 +64,8 @@ export interface CalendarEvent {
     priority: EventPriority;
     category: string; // Corresponds to TaskCategory id
     reminders: string[]; // e.g., '1d', '2h'
+    assignedTo?: string; // UID of the assigned user
+    createdAt?: string; // ISO 8601 string for recent activity feed
 }
 
 export type ObligationFrequency = 'monthly' | 'quarterly' | 'yearly';
@@ -131,4 +133,10 @@ export interface ComplianceDocument {
     fileType: string;
     fileSize: number; // in bytes
     aiSummary?: string;
+}
+
+export interface AggregatedCompanyData {
+    company: Company;
+    events: CalendarEvent[];
+    users: UserProfile[];
 }

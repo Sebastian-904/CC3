@@ -59,11 +59,13 @@ const AIAssistantDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     };
 
     const handleAddTask = async (suggestion: AITaskSuggestion) => {
+        // FIX: The `addEvent` function expects the `reminders` property.
         await addEvent({
             ...suggestion.task,
             status: 'pending',
             priority: 'medium',
             category: taskCategories[0]?.id || 'cat-1', // Default category
+            reminders: [],
         });
         
         const confirmationMessage: Message = {

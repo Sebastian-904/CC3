@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import useOnClickOutside from '../hooks/useOnClickOutside';
 import NotificationsMenu from './NotificationsMenu';
 import { useTheme } from '../hooks/useTheme';
+import CompanySwitcher from './CompanySwitcher';
 
 interface AppHeaderProps {
     onMenuClick: () => void;
@@ -17,6 +18,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
     const { theme, setTheme } = useTheme();
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
+    const canSwitchCompanies = user?.role === 'admin' || user?.role === 'consultor';
 
     useOnClickOutside(userMenuRef, () => setIsUserMenuOpen(false));
 
@@ -33,7 +35,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
             <div className="w-full flex-1">
                 {/* Search can be added here if needed */}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 md:gap-4">
+                {canSwitchCompanies && <CompanySwitcher />}
                 <NotificationsMenu />
                 <div className="relative" ref={userMenuRef}>
                     <button

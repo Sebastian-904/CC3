@@ -4,7 +4,7 @@ import {
     Company, CalendarEvent, Obligation, UserProfile, Notification, TaskCategory, ComplianceDocument, AIExtractedCompany
 } from '../lib/types';
 import { useAuth } from '../hooks/useAuth';
-import { getMockDataForUser } from '../services/firebaseService';
+import { getData, setData } from '../services/firebaseService';
 
 interface AppContextType {
     loading: boolean;
@@ -30,81 +30,144 @@ interface AppContextType {
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
+type AppState = {
+    activeCompany: Company | null;
+    companyUsers: UserProfile[];
+    events: CalendarEvent[];
+    obligations: Obligation[];
+    notifications: Notification[];
+    taskCategories: TaskCategory[];
+    complianceDocuments: ComplianceDocument[];
+};
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [activeCompany, setActiveCompany] = useState<Company | null>(null);
-    const [companyUsers, setCompanyUsers] = useState<UserProfile[]>([]);
-    const [events, setEvents] = useState<CalendarEvent[]>([]);
-    const [obligations, setObligations] = useState<Obligation[]>([]);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [taskCategories, setTaskCategories] = useState<TaskCategory[]>([]);
-    const [complianceDocuments, setComplianceDocuments] = useState<ComplianceDocument[]>([]);
+    const [state, setState] = useState<AppState>({
+        activeCompany: null,
+        companyUsers: [],
+        events: [],
+        obligations: [],
+        notifications: [],
+        taskCategories: [],
+        complianceDocuments: [],
+    });
+    
     const [importedCompanyData, setImportedCompanyData] = useState<AIExtractedCompany | null>(null);
 
+    // Load data from the simulated service on user login
     useEffect(() => {
         const loadData = async () => {
-            if (user) {
+            if (user?.companyId) {
                 setLoading(true);
-                const data = await getMockDataForUser(user.uid);
-                setActiveCompany(data.company);
-                setCompanyUsers(data.companyUsers);
-                setEvents(data.events);
-                setObligations(data.obligations);
-                setNotifications(data.notifications);
-                setTaskCategories(data.taskCategories);
-                setComplianceDocuments(data.complianceDocuments);
-                setLoading(false);
+                try {
+                    const data = await getData(user.companyId);
+                    setState({
+                        activeCompany: data.company,
+                        companyUsers: data.companyUsers,
+                        events: data.events,
+                        obligations: data.obligations,
+                        notifications: data.notifications,
+                        taskCategories: data.taskCategories,
+                        complianceDocuments: data.complianceDocuments,
+                    });
+                } catch (error) {
+                    console.error("Failed to load company data:", error);
+                    // Handle error state if necessary
+                } finally {
+                    setLoading(false);
+                }
             } else {
                 // Clear data on logout
                 setLoading(false);
-                setActiveCompany(null);
-                setEvents([]);
+                setState({
+                    activeCompany: null, companyUsers: [], events: [], obligations: [], notifications: [], taskCategories: [], complianceDocuments: []
+                });
             }
         };
         loadData();
     }, [user]);
+    
+    // Persist state changes to the simulated service
+    const persistState = useCallback(async (newState: Partial<AppState>) => {
+        if (user?.companyId) {
+            const currentState = await getData(user.companyId);
+            const updatedData = { ...currentState, ...newState };
+            await setData(user.companyId, updatedData);
+        }
+    }, [user]);
 
     const addEvent = useCallback(async (event: Omit<CalendarEvent, 'id' | 'companyId'>) => {
-        if (!activeCompany) return;
+        if (!user?.companyId) return;
         const newEvent: CalendarEvent = {
             ...event,
             id: `evt-${Date.now()}`,
-            companyId: activeCompany.id,
+            companyId: user.companyId,
         };
-        setEvents(prev => [...prev, newEvent]);
-    }, [activeCompany]);
+        let updatedEvents: CalendarEvent[] = [];
+        setState(s => {
+            updatedEvents = [...s.events, newEvent];
+            return { ...s, events: updatedEvents };
+        });
+        await persistState({ events: updatedEvents });
+    }, [user, persistState]);
 
     const updateEvent = useCallback(async (event: CalendarEvent) => {
-        setEvents(prev => prev.map(e => e.id === event.id ? event : e));
-    }, []);
+        let updatedEvents: CalendarEvent[] = [];
+        setState(s => {
+            updatedEvents = s.events.map(e => e.id === event.id ? event : e);
+            return { ...s, events: updatedEvents };
+        });
+        await persistState({ events: updatedEvents });
+    }, [persistState]);
     
     const updateCompany = useCallback(async (company: Company) => {
-        setActiveCompany(company);
-    }, []);
+        setState(s => ({ ...s, activeCompany: company }));
+        await persistState({ activeCompany: company });
+    }, [persistState]);
 
     const addObligation = useCallback(async (obligation: Omit<Obligation, 'id' | 'companyId' | 'status'>) => {
-        if (!activeCompany) return;
+        if (!user?.companyId) return;
         const newObligation: Obligation = {
             ...obligation,
             id: `ob-${Date.now()}`,
-            companyId: activeCompany.id,
+            companyId: user.companyId,
             status: 'active',
         };
-        setObligations(prev => [...prev, newObligation]);
-    }, [activeCompany]);
+        let updatedObligations: Obligation[] = [];
+        setState(s => {
+            updatedObligations = [...s.obligations, newObligation];
+            return { ...s, obligations: updatedObligations };
+        });
+        await persistState({ obligations: updatedObligations });
+    }, [user, persistState]);
 
     const deleteObligation = useCallback(async (id: string) => {
-        setObligations(prev => prev.filter(ob => ob.id !== id));
-    }, []);
+        let updatedObligations: Obligation[] = [];
+        setState(s => {
+            updatedObligations = s.obligations.filter(ob => ob.id !== id);
+            return { ...s, obligations: updatedObligations };
+        });
+        await persistState({ obligations: updatedObligations });
+    }, [persistState]);
     
-    const markNotificationAsRead = useCallback((id: string) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-    }, []);
+    const markNotificationAsRead = useCallback(async (id: string) => {
+        let updatedNotifications: Notification[] = [];
+        setState(s => {
+            updatedNotifications = s.notifications.map(n => n.id === id ? { ...n, isRead: true } : n);
+            return { ...s, notifications: updatedNotifications };
+        });
+        await persistState({ notifications: updatedNotifications });
+    }, [persistState]);
 
-    const markAllNotificationsAsRead = useCallback(() => {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    }, []);
+    const markAllNotificationsAsRead = useCallback(async () => {
+        let updatedNotifications: Notification[] = [];
+        setState(s => {
+            updatedNotifications = s.notifications.map(n => ({ ...n, isRead: true }));
+            return { ...s, notifications: updatedNotifications };
+        });
+        await persistState({ notifications: updatedNotifications });
+    }, [persistState]);
     
     const addNewComplianceDocument = useCallback(async (doc: Omit<ComplianceDocument, 'id' | 'uploadDate'>) => {
         const newDoc: ComplianceDocument = {
@@ -112,22 +175,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             id: `cdoc-${Date.now()}`,
             uploadDate: new Date().toISOString(),
         };
-        setComplianceDocuments(prev => [newDoc, ...prev]);
-    }, []);
+        let updatedDocs: ComplianceDocument[] = [];
+        setState(s => {
+            updatedDocs = [newDoc, ...s.complianceDocuments];
+            return { ...s, complianceDocuments: updatedDocs };
+        });
+        await persistState({ complianceDocuments: updatedDocs });
+    }, [persistState]);
 
     const deleteComplianceDocument = useCallback(async (id: string) => {
-        setComplianceDocuments(prev => prev.filter(doc => doc.id !== id));
-    }, []);
+        let updatedDocs: ComplianceDocument[] = [];
+        setState(s => {
+            updatedDocs = s.complianceDocuments.filter(doc => doc.id !== id);
+            return { ...s, complianceDocuments: updatedDocs };
+        });
+        await persistState({ complianceDocuments: updatedDocs });
+    }, [persistState]);
 
     const value = {
         loading,
-        activeCompany,
-        companyUsers,
-        events,
-        obligations,
-        notifications,
-        taskCategories,
-        complianceDocuments,
+        activeCompany: state.activeCompany,
+        companyUsers: state.companyUsers,
+        events: state.events,
+        obligations: state.obligations,
+        notifications: state.notifications,
+        taskCategories: state.taskCategories,
+        complianceDocuments: state.complianceDocuments,
         importedCompanyData,
         addEvent,
         updateEvent,

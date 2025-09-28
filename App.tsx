@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
@@ -18,6 +17,35 @@ import ComplianceLibraryPage from './pages/ComplianceLibraryPage';
 import ImportReviewPage from './pages/ImportReviewPage';
 import QuickStartGuidePage from './pages/QuickStartGuidePage';
 import ErrorBoundary from './components/ErrorBoundary';
+import ConsultantDashboardPage from './pages/ConsultantDashboardPage';
+import { useAuth } from './hooks/useAuth';
+
+const AppContent: React.FC = () => {
+    const { user } = useAuth();
+    // This key will change when the user switches companies, forcing a remount
+    // of AppLayout and all its children, effectively resetting state without a page reload.
+    const layoutKey = user?.companyId || 'no-company';
+
+    return (
+        <AppLayout key={layoutKey}>
+            <Routes>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/consultant-dashboard" element={<ConsultantDashboardPage />} />
+                <Route path="/company-profile" element={<CompanyProfilePage />} />
+                <Route path="/obligations" element={<ObligationsPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/import-review" element={<ImportReviewPage />} />
+                <Route path="/users" element={<UsersPage />} />
+                <Route path="/library" element={<ComplianceLibraryPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/quick-start" element={<QuickStartGuidePage />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+        </AppLayout>
+    );
+};
+
 
 const App: React.FC = () => {
     return (
@@ -28,21 +56,7 @@ const App: React.FC = () => {
                     path="/*"
                     element={
                         <AuthGuard>
-                            <AppLayout>
-                                <Routes>
-                                    <Route path="/dashboard" element={<DashboardPage />} />
-                                    <Route path="/company-profile" element={<CompanyProfilePage />} />
-                                    <Route path="/obligations" element={<ObligationsPage />} />
-                                    <Route path="/reports" element={<ReportsPage />} />
-                                    <Route path="/import-review" element={<ImportReviewPage />} />
-                                    <Route path="/users" element={<UsersPage />} />
-                                    <Route path="/library" element={<ComplianceLibraryPage />} />
-                                    <Route path="/settings" element={<SettingsPage />} />
-                                    <Route path="/quick-start" element={<QuickStartGuidePage />} />
-                                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                                </Routes>
-                            </AppLayout>
+                            <AppContent />
                         </AuthGuard>
                     }
                 />

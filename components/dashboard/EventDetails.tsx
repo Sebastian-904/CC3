@@ -5,6 +5,7 @@ import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import { Edit } from 'lucide-react';
 import TaskEditDialog from './TaskEditDialog';
+import { useApp } from '../../hooks/useApp';
 
 interface EventDetailsProps {
   isOpen: boolean;
@@ -14,6 +15,9 @@ interface EventDetailsProps {
 
 const EventDetails: React.FC<EventDetailsProps> = ({ isOpen, onClose, event }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const { companyUsers } = useApp();
+
+  const assignedUser = companyUsers.find(u => u.uid === event.assignedTo);
 
   const handleEditClose = () => {
       setIsEditing(false);
@@ -31,7 +35,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ isOpen, onClose, event }) =
                 <DialogClose onClose={onClose} />
             </DialogHeader>
             <DialogContent className="space-y-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
                     <div>
                         <span className="text-sm font-semibold">Status:</span>
                         <Badge variant={event.status} className="ml-2">{event.status}</Badge>
@@ -41,6 +45,12 @@ const EventDetails: React.FC<EventDetailsProps> = ({ isOpen, onClose, event }) =
                          <Badge variant="secondary" className="ml-2 capitalize">{event.priority}</Badge>
                     </div>
                 </div>
+                {assignedUser && (
+                    <div>
+                        <span className="text-sm font-semibold">Assigned to:</span>
+                        <span className="ml-2 text-sm text-muted-foreground">{assignedUser.displayName}</span>
+                    </div>
+                )}
                 <div>
                     <h4 className="font-semibold text-sm">Description</h4>
                     <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{event.description || "No description provided."}</p>

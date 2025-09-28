@@ -16,7 +16,7 @@ interface TaskEditDialogProps {
 }
 
 const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event }) => {
-  const { addEvent, updateEvent, taskCategories } = useApp();
+  const { addEvent, updateEvent, taskCategories, companyUsers } = useApp();
   const { toast } = useToast();
   
   const [title, setTitle] = useState('');
@@ -24,6 +24,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event 
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<EventPriority>('medium');
   const [category, setCategory] = useState<string>('');
+  const [assignedTo, setAssignedTo] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -33,6 +34,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event 
       setDescription(event.description);
       setPriority(event.priority);
       setCategory(event.category);
+      setAssignedTo(event.assignedTo || '');
     } else {
       // Defaults for new event
       setTitle('');
@@ -40,6 +42,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event 
       setDescription('');
       setPriority('medium');
       setCategory(taskCategories[0]?.id || '');
+      setAssignedTo('');
     }
   }, [event, taskCategories, isOpen]);
 
@@ -59,6 +62,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event 
                 description,
                 priority,
                 category,
+                assignedTo: assignedTo || undefined,
             });
             toast({ title: "Task Updated", description: `"${title}" has been updated.`});
         } else {
@@ -70,6 +74,7 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event 
                 category,
                 status: 'pending',
                 reminders: [],
+                assignedTo: assignedTo || undefined,
             });
             toast({ title: "Task Created", description: `"${title}" has been added to the calendar.`});
         }
@@ -117,6 +122,15 @@ const TaskEditDialog: React.FC<TaskEditDialogProps> = ({ isOpen, onClose, event 
                     ))}
                 </Select>
             </div>
+        </div>
+        <div className="space-y-1">
+            <label htmlFor="assignedTo">Assign to</label>
+            <Select id="assignedTo" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
+                <option value="">Unassigned</option>
+                {companyUsers.map(user => (
+                    <option key={user.uid} value={user.uid}>{user.displayName}</option>
+                ))}
+            </Select>
         </div>
       </DialogContent>
       <DialogFooter>

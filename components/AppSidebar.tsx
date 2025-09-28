@@ -13,7 +13,8 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  GanttChartSquare
+  GanttChartSquare,
+  Globe
 } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
 import Button from './ui/Button';
@@ -28,8 +29,11 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, setIsOpen }) => {
     const { t } = useLanguage();
     const { user } = useAuth();
 
+    const isConsultantOrAdmin = user?.role === 'admin' || user?.role === 'consultor';
+
     const navItems = [
-      { to: '/dashboard', icon: LayoutDashboard, label: t('sidebarDashboard') },
+      { to: '/consultant-dashboard', icon: Globe, label: 'Dashboard Global', roles: ['admin', 'consultor'] },
+      { to: '/dashboard', icon: LayoutDashboard, label: isConsultantOrAdmin ? 'Dashboard Cliente' : t('sidebarDashboard') },
       { to: '/company-profile', icon: Building, label: t('sidebarCompanyProfile') },
       { to: '/obligations', icon: FileText, label: t('sidebarObligations') },
       { to: '/reports', icon: BarChart2, label: t('sidebarReports') },

@@ -1,9 +1,15 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
-const PopoverRoot = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-    <div className={cn("relative", className)} {...props} />
-)
+// FIX: Wrap PopoverRoot with forwardRef to accept a ref
+const PopoverRoot = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("relative", className)} {...props} />
+));
+PopoverRoot.displayName = "PopoverRoot";
+
 
 const PopoverTrigger = React.forwardRef<
     HTMLButtonElement,
